@@ -1,2 +1,2 @@
 # ABoatScraping
-Scrapes ship* information 
+Scrapes ship information 
