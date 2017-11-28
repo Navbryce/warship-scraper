@@ -2,10 +2,22 @@ from lxml import cssselect
 from lxml import html
 from unidecode import unidecode
 import requests
+import json
+
 def normalizeString(string, removeNewLines):
     if removeNewLines:
         string = string.replace("\n", " ") #replace new lines with spaces
     return unidecode(string)
+def removeOddCharacters(string, charactersArray):
+    for character in charactersArray:
+        string = string.replace(character, "")
+    return string
+def formatString(string):
+    oddCharacters = ['\"',':']
+    string = normalizeString(string, True)
+    return removeOddCharacters(string, oddCharacters)
+
+
 def getArrayOfWords(haystack, needle, numberOfWords): #number of words including needle
     words = []
     position = haystack.find(needle)
@@ -27,7 +39,21 @@ def getArrayOfWords(haystack, needle, numberOfWords): #number of words including
             position = positionOfNextSpace + 1
         words.append(word)
     return words
-
+def processRow(rowElement, shipBeingUpdated):
+    cellElements = rowElement.cssselect("td")
+    if len(cellElements) == 2:
+        key = formatString(cellElements[0].text_content())
+        valueElement = cellElements[1]
+        arrayValueElements = valueElement.cssselect("ul>li")
+        if len(arrayValueElements)==0: #dealing with a single value element aka not an array
+            shipBeingUpdated[key] = formatString(valueElement.text_content())
+        else :
+            valuesArray = []
+            for arrayValueElement in arrayValueElements:
+                value = formatString(arrayValueElement.text_content())
+                valuesArray.append(value)
+            shipBeingUpdated[key] = valuesArray
+    return shipBeingUpdated
 
 shipPages = ["https://en.wikipedia.org/wiki/USS_Iowa_(BB-61)"]
 ships = []
@@ -53,8 +79,16 @@ for pageURL in shipPages:
             shipImages.append(imageObject)
 
     ship["pictures"] = shipImages
-    print(getArrayOfWords(normalizeString(content.text_content(), False), "Speed:", 10))
+
+    #get most ship infoBox
+    rows = infoBox.cssselect("tr")
+    for row in rows:
+        ship = processRow(row, ship)
+
+
     #print (infoBox.text_content())
+
+
     #Appends the ship to the list of ships
     ships.append(ship)
-#print(ships)
+print(json.dumps(ships))
