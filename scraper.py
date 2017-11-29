@@ -1,4 +1,5 @@
 from lxml import cssselect
+from Armament import Armament
 from lxml import html
 from unidecode import unidecode
 import requests
@@ -18,10 +19,13 @@ def formatString(string):
     return removeOddCharacters(string, oddCharacters)
 
 
-def getArrayOfWords(haystack, needle, numberOfWords): #number of words including needle
+def getArrayOfWords(haystack, needle, numberOfWords): #number of words including needle. if needle is None, then start at beginning of haystack. if numberOfWords==-1, then all words
     words = []
-    position = haystack.find(needle)
-    while position != -1 and len(words) < numberOfWords:
+    if needle:
+        position = haystack.find(needle)
+    else:
+        position = 0
+    while position != -1 and (len(words) < numberOfWords or numberOfWords == -1):
         haystack = haystack[position:]
 
         #check for more than one space and remove them if they exist (AKA if there is a space at the position index)
@@ -39,6 +43,14 @@ def getArrayOfWords(haystack, needle, numberOfWords): #number of words including
             position = positionOfNextSpace + 1
         words.append(word)
     return words
+def processArmament(armamentElement):
+    armament = None
+    arrayOfWords = getArrayOfWords(formatString(armamentElement.text_content()), None, -1)
+    if(len(arrayOfWords) != 1): #if it equals -1, then it's a date (extraneous, not armament, date of gun configuration)
+        armament = Armament(arrayOfWords[0]).toSerializableForm();
+    return armament
+
+
 def processRow(rowElement, shipBeingUpdated):
     cellElements = rowElement.cssselect("td")
     if len(cellElements) == 2:
@@ -49,13 +61,35 @@ def processRow(rowElement, shipBeingUpdated):
             shipBeingUpdated[key] = formatString(valueElement.text_content())
         else :
             valuesArray = []
-            for arrayValueElement in arrayValueElements:
-                value = formatString(arrayValueElement.text_content())
-                valuesArray.append(value)
+            if key == "Armament":
+                configuration = 2 #Which configuration do you want if their are multiple configurations
+                configurationCounter = 0
+                armamentElementCounter = 0
+                oneConfiguration = False #If there is only one configuration, keep all armaments. The counter increments the configuration counter by one when it runs into its first null (a date) because if there are two configurations, both have a dates. 1st configuration is after the FIRST null except for when there is only ONE configuration (no dates, no nulls)
+
+                for arrayValueElement in arrayValueElements:
+                    value = processArmament(arrayValueElement)
+                    if value != None and armamentElementCounter == 0: #The first "value" is not a configuration year, so it must only have one configuration
+                        oneConfiguration = True
+                    elif value is None:
+                        configurationCounter += 1
+
+
+                    if configurationCounter > configuration:
+                        break
+                    elif (configurationCounter == configuration and value != None) or (oneConfiguration):
+                        valuesArray.append(value)
+
+                    armamentElementCounter += 1
+
+            else:
+                for arrayValueElement in arrayValueElements:
+                    value = formatString(arrayValueElement.text_content())
+                    valuesArray.append(value)
             shipBeingUpdated[key] = valuesArray
     return shipBeingUpdated
 
-shipPages = ["https://en.wikipedia.org/wiki/USS_Iowa_(BB-61)"]
+shipPages = ["https://en.wikipedia.org/wiki/USS_Iowa_(BB-61)", "https://en.wikipedia.org/wiki/German_battleship_Gneisenau"]
 ships = []
 for pageURL in shipPages:
     ship = {}
