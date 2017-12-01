@@ -46,8 +46,10 @@ def getArrayOfWords(haystack, needle, numberOfWords): #number of words including
 def processArmament(armamentElement):
     armament = None
     arrayOfWords = getArrayOfWords(formatString(armamentElement.text_content()), None, -1)
-    if(len(arrayOfWords) != 1): #if it equals -1, then it's a date (extraneous, not armament, date of gun configuration)
-        armament = Armament(arrayOfWords[0]).toSerializableForm();
+    if(len(arrayOfWords) > 1): #if it equals 1, then it's a date (extraneous, not armament, date of gun configuration)
+        armamentLink = armamentElement.cssselect('a')[0]; #there should be one and only one link in an armament element. the link should be the full name of the gun
+        armamentFullName = formatString(armamentLink.text_content());
+        armament = Armament(armamentFullName, arrayOfWords[0]).toSerializableForm();
     return armament
 
 

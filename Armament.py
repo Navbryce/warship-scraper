@@ -2,11 +2,13 @@ import json
 
 class Armament(object):
     numberOfBarrels = -1
-    numberOfTurrets = -1
+    fullName = None
 
 
-    def __init__(self, numberOfBarrels):
+    def __init__(self, fullName, numberOfBarrels):
+        self.fullName = fullName
         self.numberOfBarrels = numberOfBarrels
     def toSerializableForm(self):
-        armament = {'numberOfBarrels': self.numberOfBarrels};
+        armament = {'fullName': self.fullName,
+                    'numberOfBarrels': self.numberOfBarrels}
         return armament
