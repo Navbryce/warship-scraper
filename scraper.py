@@ -8,7 +8,7 @@ import json
 def normalizeString(string, removeNewLines):
     if removeNewLines:
         string = string.replace("\n", " ") #replace new lines with spaces
-    return unidecode(string)
+    return unidecode(string) #Converts unicode characters to normal characters
 def removeOddCharacters(string, charactersArray):
     for character in charactersArray:
         string = string.replace(character, "")
@@ -17,6 +17,29 @@ def formatString(string):
     oddCharacters = ['\"',':']
     string = normalizeString(string, True)
     return removeOddCharacters(string, oddCharacters)
+def getWordsBeforeUnit(haystack, unit, numberOfWords):
+    unit = ' ' + unit   #ensures it's not just part of word
+    words = []
+    positionOfUnit = haystack.find(unit)
+    if positionOfUnit != -1:
+        haystack = haystack[0:positionOfUnit] #really crops out the space before the unit and everyhthing eafter
+        mostRecentSpace =  len(haystack)
+        position = mostRecentSpace - 1
+        while len(words) < numberOfWords and position != -1:
+            character = haystack[position]
+            if character == ' ':
+                if position + 1 != mostRecentSpace: #makes sure it isn't just a space before a space
+                    word = haystack[position + 1:] #The indexes after the space to the end of the string should all be words
+                    words.append(word)
+                haystack = haystack[0:position] #crops out the space
+                mostRecentSpace = len(haystack)
+            elif position == 0:
+                word = haystack[position:] #The indexes after the space to the end of the string should all be words
+                words.append(word)
+
+            position-=1;
+    return words
+
 
 
 def getArrayOfWords(haystack, needle, numberOfWords): #number of words including needle. if needle is None, then start at beginning of haystack. if numberOfWords==-1, then all words
@@ -49,7 +72,22 @@ def processArmament(armamentElement):
     if(len(arrayOfWords) > 1): #if it equals 1, then it's a date (extraneous, not armament, date of gun configuration)
         armamentLink = armamentElement.cssselect('a')[0]; #there should be one and only one link in an armament element. the link should be the full name of the gun
         armamentFullName = formatString(armamentLink.text_content());
-        armament = Armament(armamentFullName, arrayOfWords[0]).toSerializableForm();
+
+        armament = Armament(armamentFullName, arrayOfWords[0])
+
+
+        charactersToRemove = ['(', ')']
+        armamentFullNameWithout = removeOddCharacters(armamentFullName, charactersToRemove)
+        unitsToTry = ["mm", "cm"] #Prioritizes the first in the array
+        for unit in unitsToTry:
+            armamentSizeArray = getWordsBeforeUnit(armamentFullNameWithout, unit, 1)
+            if len(armamentSizeArray) == 1:
+                armament.size = armamentSizeArray[0]
+                armament.sizeUnit = unit
+                break #You want to prioritze the first unit
+
+
+        armament = armament.toSerializableForm()
     return armament
 
 
