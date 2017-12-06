@@ -1,9 +1,7 @@
-import json
-
 class Armament(object):
     numberOfBarrels = -1
     fullName = None
-    sizeUnit = None
+    unit = None
     size = None
 
 
@@ -15,5 +13,5 @@ class Armament(object):
                     'numberOfBarrels': self.numberOfBarrels}
         if self.size != None:
             armament['size'] = self.size
-            armament['sizeUnit'] = self.sizeUnit
+            armament['unit'] = self.unit
         return armament
