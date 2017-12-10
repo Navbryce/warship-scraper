@@ -152,19 +152,29 @@ def processArmor(armorElement):
         #print(armorSerializable)
     return armorSerializable
 
+def categorizeElement(key, value, ship): #Will categorize elements that are not already in "arrays." For example, commissioned, decomissioned, recomissioned, ... are all listed as separate elements in the highest level of table
+    key = key.lower(); #the key value is the key in the highest level of the info table
+    if key.find('commission') >= 0:
+        if 'importantDates' not in ship: #creates the array if it doesn't already exist
+            ship['importantDates'] = []
+        dateElement = {"significance": key, "date": value}
+        ship['importantDates'].append(dateElement)
+    else:   #Catch all
+        ship[key] = value
+    return ship
 
 def processRow(rowElement, shipBeingUpdated):
     cellElements = rowElement.cssselect("td")
-    if len(cellElements) == 2:
+    if len(cellElements) == 2 and len(cellElements[1].cssselect('img')) == 0: #Ensure it actually has a value and the value does not have a nimage
         key = formatString(cellElements[0].text_content())
         valueElement = cellElements[1]
         arrayValueElements = valueElement.cssselect("ul>li")
         if len(arrayValueElements)==0: #dealing with a single value element aka not an array
-            shipBeingUpdated[key] = formatString(valueElement.text_content())
+            shipBeingUpdated = categorizeElement(key, formatString(valueElement.text_content()), ship)
         else :
             valuesArray = []
             if key == "Armament":
-                configuration = 2 #Which configuration do you want if their are multiple configurations
+                configuration = int(shipBeingUpdated['configuration']) #Which configuration do you want if their are multiple configurations
                 configurationCounter = 0
                 armamentElementCounter = 0
                 oneConfiguration = False #If there is only one configuration, keep all armaments. The counter increments the configuration counter by one when it runs into its first null (a date) because if there are two configurations, both have a dates. 1st configuration is after the FIRST null except for when there is only ONE configuration (no dates, no nulls)
@@ -200,11 +210,15 @@ def processRow(rowElement, shipBeingUpdated):
 
 
 #Main script
-shipPages = ["https://en.wikipedia.org/wiki/USS_Iowa_(BB-61)", "https://en.wikipedia.org/wiki/German_battleship_Gneisenau"]
+shipPages = [
+                {"url": "https://en.wikipedia.org/wiki/USS_Iowa_(BB-61)", "configuration": "0"},
+                {"url": "https://en.wikipedia.org/wiki/German_battleship_Gneisenau", "configuration": "0"}
+            ]
 ships = []
-for pageURL in shipPages:
-    ship = {}
-    page = requests.get(pageURL)
+maxNumberOfImagesForAShip = 5
+for page in shipPages:
+    ship = {'configuration': page['configuration']}
+    page = requests.get(page['url'])
     tree = html.fromstring(page.content)
     infoBox = tree.cssselect(".infobox")[0]
     content = tree.cssselect("#bodyContent")[0]
@@ -214,6 +228,7 @@ for pageURL in shipPages:
 
     #Scrapes all images and descriptions
     images = content.cssselect("img")
+    imageCounter = 0
     for image in images:
         imageObject = {}
         src = image.attrib["src"]
@@ -222,6 +237,11 @@ for pageURL in shipPages:
         imageObject["description"] = description
         if len(description)>0: #Filters out non-ship related pictures
             shipImages.append(imageObject)
+
+        imageCounter += 1
+        if imageCounter == maxNumberOfImagesForAShip:
+            break
+
 
     ship["pictures"] = shipImages
 
