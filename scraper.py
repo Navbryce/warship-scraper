@@ -8,6 +8,7 @@ import requests
 import json
 
 #Global variables
+global websiteRoot #Assigned in the settings area of the script
 previousArmorType = None
 
 
@@ -82,6 +83,34 @@ def getArrayOfWords(haystack, needle, numberOfWords): #number of words including
         words.append(word)
     return words
 
+def getImages(pageElement, maxImages): #Page element = DOM element that is a parent (direct or indirect) of the pictures
+    #Scrapes all images and descriptions
+    imageObjArray = []
+    imagesWrappers = pageElement.cssselect(".thumb")
+    imageCounter = 0
+    for imageWrapper in imagesWrappers: #Image wrapper is the container for the caption and image
+        image = imageWrapper.cssselect("img")[0] #Actual image object
+        caption = imageWrapper.cssselect(".thumbcaption")[0] #Holds the description
+
+        imageObject = {}
+        src = image.attrib["src"][2:] #remove the first two characters of the URL because they are a filepaths for the server ('//'), not URL. Represent root.
+        description = formatString(caption.text_content())
+        imageObject["src"] = src
+        imageObject["description"] = description
+        if len(description)>0: #Filters out non-ship related pictures
+            #Filters out unwanted images such as "svgs"
+            filterOutKeyWords = ['svg']
+            containsKeyWord = False
+            for keyword in filterOutKeyWords:
+                if src.find(keyword) >= 0:
+                    containsKeyWord = True
+            if containsKeyWord == False:
+                imageObjArray.append(imageObject)
+                imageCounter += 1
+                if imageCounter == maxImages:
+                    break
+    return imageObjArray
+
 #Returns a Date object. Assumes the date is in the "day month year" format
 def createDateObject(dateString):
     return Date.strptime(dateString, "%d %B %Y")
@@ -105,9 +134,12 @@ def processArmament(armamentElement):
                 armament.size = armamentSizeArray[0]
                 armament.unit = unit
                 break #You want to prioritze the first unit
-
-
         armament = armament.toSerializableForm()
+        #Get images
+        if armamentLink is not None:
+            armamentPage = html.fromstring(requests.get(websiteRoot + armamentLink.attrib['href']).content)
+            armamentContent = armamentPage.cssselect('#bodyContent')[0]
+            armament['pictures'] = getImages(armamentContent, 1)
     return armament
 
 def processArmor(armorElement):
@@ -226,6 +258,7 @@ def processRow(rowElement, shipBeingUpdated):
 
 
 #Main script
+websiteRoot = 'https://en.wikipedia.org'
 shipPages = [
                 {"url": "https://en.wikipedia.org/wiki/USS_Iowa_(BB-61)", "configuration": "0"},
                 {"url": "https://en.wikipedia.org/wiki/German_battleship_Gneisenau", "configuration": "0"}
@@ -244,23 +277,7 @@ for page in shipPages:
     shipImages = []
 
     #Scrapes all images and descriptions
-    images = content.cssselect("img")
-    imageCounter = 0
-    for image in images:
-        imageObject = {}
-        src = image.attrib["src"]
-        description = image.attrib["alt"]
-        imageObject["src"] = src
-        imageObject["description"] = description
-        if len(description)>0: #Filters out non-ship related pictures
-            shipImages.append(imageObject)
-
-        imageCounter += 1
-        if imageCounter == maxNumberOfImagesForAShip:
-            break
-
-
-    ship["pictures"] = shipImages
+    ship["pictures"] = getImages(content, maxNumberOfImagesForAShip)
 
     #get most ship infoBox
     rows = infoBox.cssselect("tr")
