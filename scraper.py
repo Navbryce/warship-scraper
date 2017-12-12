@@ -2,6 +2,7 @@ from lxml import cssselect
 from Armament import Armament
 from Armor import Armor
 from lxml import html
+from Date import Date
 from unidecode import unidecode
 import requests
 import json
@@ -80,6 +81,11 @@ def getArrayOfWords(haystack, needle, numberOfWords): #number of words including
             position = positionOfNextSpace + 1
         words.append(word)
     return words
+
+#Returns a Date object. Assumes the date is in the "day month year" format
+def createDateObject(dateString):
+    return Date.strptime(dateString, "%d %B %Y")
+
 def processArmament(armamentElement):
     armament = None
     arrayOfWords = getArrayOfWords(formatString((armamentElement.text_content())), None, -1)
@@ -153,11 +159,21 @@ def processArmor(armorElement):
     return armorSerializable
 
 def categorizeElement(key, value, ship): #Will categorize elements that are not already in "arrays." For example, commissioned, decomissioned, recomissioned, ... are all listed as separate elements in the highest level of table
-    key = key.lower(); #the key value is the key in the highest level of the info table
-    if key.find('commission') >= 0:
+    key = key.lower() #the key value is the key in the highest level of the info table
+
+    #Find the category that applies
+    importantDateKeyWords = ['commission', 'launch', 'struck', 'laid', 'ordered']
+    importantDate = False
+    for keyWord in importantDateKeyWords: #If else separate from for loop for organizational reasons rather. I didn't want a bunch of nested for loops and if statements
+        if key.find(keyWord) >= 0:
+            importantDate = True
+            break
+
+    #Add element to category. Perform necessary operations
+    if importantDate:
         if 'importantDates' not in ship: #creates the array if it doesn't already exist
             ship['importantDates'] = []
-        dateElement = {"significance": key, "date": value}
+        dateElement = {"significance": key, "date": createDateObject(value).toSerializableForm()}
         ship['importantDates'].append(dateElement)
     else:   #Catch all
         ship[key] = value
@@ -175,7 +191,7 @@ def processRow(rowElement, shipBeingUpdated):
             valuesArray = []
             if key == "Armament":
                 configuration = int(shipBeingUpdated['configuration']) #Which configuration do you want if their are multiple configurations
-                configurationCounter = 0
+                configurationCounter = -1 #If multiple configurations, the first one will have a date at the top of it
                 armamentElementCounter = 0
                 oneConfiguration = False #If there is only one configuration, keep all armaments. The counter increments the configuration counter by one when it runs into its first null (a date) because if there are two configurations, both have a dates. 1st configuration is after the FIRST null except for when there is only ONE configuration (no dates, no nulls)
 
@@ -217,6 +233,7 @@ shipPages = [
 ships = []
 maxNumberOfImagesForAShip = 5
 for page in shipPages:
+    #Parrellize ?
     ship = {'configuration': page['configuration']}
     page = requests.get(page['url'])
     tree = html.fromstring(page.content)
