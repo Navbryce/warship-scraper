@@ -9,7 +9,6 @@ import json
 
 #Global variables
 global websiteRoot #Assigned in the settings area of the script
-previousArmorType = None
 
 
 def normalizeString(string, removeNewLines):
@@ -65,22 +64,27 @@ def getArrayOfWords(haystack, needle, numberOfWords): #number of words including
     else:
         position = 0
     while position != -1 and (len(words) < numberOfWords or numberOfWords == -1):
+        word = None
+
+
         haystack = haystack[position:]
 
         #check for more than one space and remove them if they exist (AKA if there is a space at the position index)
         while haystack[0:1] == ' ':
             haystack = haystack[1:]
 
-
         positionOfNextSpace = haystack.find(" ")
 
         if positionOfNextSpace == -1:
-            word = haystack
+            if len(haystack) > 0:
+                word = haystack
+                words.append(word)
             position = positionOfNextSpace
+
         else:
             word = haystack[0 : positionOfNextSpace]
+            words.append(word)
             position = positionOfNextSpace + 1
-        words.append(word)
     return words
 
 def getImages(pageElement, maxImages): #Page element = DOM element that is a parent (direct or indirect) of the pictures
@@ -139,11 +143,10 @@ def processArmament(armamentElement):
         if armamentLink is not None:
             armamentPage = html.fromstring(requests.get(websiteRoot + armamentLink.attrib['href']).content)
             armamentContent = armamentPage.cssselect('#bodyContent')[0]
-            armament['pictures'] = getImages(armamentContent, 1)
+            armament['pictures'] = getImages(armamentContent, numberOfImagesForSubsItems)
     return armament
 
-def processArmor(armorElement):
-    global previousArmorType
+def processArmor(armorElement, listTitleInput):
 
     armor = None
     armorRange = False
@@ -151,12 +154,12 @@ def processArmor(armorElement):
     armorMaxValue = None
     armorUnit = None
     armorType = None
+    listTitle = None
 
     armorFormattedText = formatString(replaceColonWithSpace((armorElement.text_content()))) #replace colon with space because some pages have errors where there is no space after the colon
     arrayOfWords = getArrayOfWords(armorFormattedText, None, 10)
     if len(arrayOfWords) >= 1:
         armorType = arrayOfWords[0]
-        dealingWithSubItem = False; #IF dealing with the item under a list of armor types that is only part of an armor type. AKA "deck": "first", "second". "third"
         if(len(arrayOfWords) >= 2):#FILTERS OUT: We are dealing with the title to a list of armor elements below this one
             oddCharacters = ["(", ")"]
             armorFullName = removeOddCharacters(armorFormattedText, oddCharacters)
@@ -173,28 +176,35 @@ def processArmor(armorElement):
                     else:
                         armorMaxValue = armorWidthArray[0]
                         armorMinValue = armorWidthArray[0]
-
-                    if previousArmorType != None and len(armorElement.cssselect("a")) == 0: #you can identify a sub list item by its LACK of a link
-                        armorType = previousArmorType + " " + armorType #previousArmorType is the title of the list such as "Deck" in "Deck": "First", "Second"
-                        dealingWithSubItem = True
+                    if listTitleInput != None and len(armorElement.cssselect("a")) == 0: #you can identify a sub list item by its LACK of a link
+                        armorType = listTitleInput + " " + armorType #previousArmorType is the title of the list such as "Deck" in "Deck": "First", "Second"
 
                     armor = Armor(armorType, armorMinValue, armorMaxValue, armorUnit, armorRange)
 
                     break #exit the unit for loop
-        if dealingWithSubItem is False:
-            previousArmorType = armorType  #global variable defined in processArmor scope
+        else:
+            listTitle = armorType
 
     armorSerializable = None
     if armor != None:
         armorSerializable = armor.toSerializableForm()
         #print(armorSerializable)
+    elif listTitle is not None:
+        armorSerializable = {'listTitle': listTitle}
     return armorSerializable
+def processSpeed(speedRaw, ship): #Will modify ship object so no need to return value
+    speedValue = getWordsBeforeUnit(speedRaw, 'kn', 1)[0] #Unit should be in knots
+    speedDictionary = {'speedValue': speedValue,
+                        'speedUnit': 'kn'
+                      }
+    ship['speed'] = speedDictionary
 
 def categorizeElement(key, value, ship): #Will categorize elements that are not already in "arrays." For example, commissioned, decomissioned, recomissioned, ... are all listed as separate elements in the highest level of table
     key = key.lower() #the key value is the key in the highest level of the info table
 
     #Find the category that applies
     importantDateKeyWords = ['commission', 'launch', 'struck', 'laid', 'ordered']
+
     importantDate = False
     for keyWord in importantDateKeyWords: #If else separate from for loop for organizational reasons rather. I didn't want a bunch of nested for loops and if statements
         if key.find(keyWord) >= 0:
@@ -207,9 +217,10 @@ def categorizeElement(key, value, ship): #Will categorize elements that are not 
             ship['importantDates'] = []
         dateElement = {"significance": key, "date": createDateObject(value).toSerializableForm()}
         ship['importantDates'].append(dateElement)
+    elif key.find('speed') >= 0:
+        processSpeed(value, ship)
     else:   #Catch all
         ship[key] = value
-    return ship
 
 def processRow(rowElement, shipBeingUpdated):
     cellElements = rowElement.cssselect("td")
@@ -218,7 +229,7 @@ def processRow(rowElement, shipBeingUpdated):
         valueElement = cellElements[1]
         arrayValueElements = valueElement.cssselect("ul>li")
         if len(arrayValueElements)==0: #dealing with a single value element aka not an array
-            shipBeingUpdated = categorizeElement(key, formatString(valueElement.text_content()), ship)
+            categorizeElement(key, formatString(valueElement.text_content()), ship) # the object referenced by 'ship' modified in function. thus, no ship returned because reference points to the same object
         else :
             valuesArray = []
             if key == "Armament":
@@ -242,10 +253,12 @@ def processRow(rowElement, shipBeingUpdated):
                     armamentElementCounter += 1
 
             elif key == "Armor":
-                previousArmorType = None
+                lastListTitle = None
                 for armorElement in arrayValueElements:
-                    armor = processArmor(armorElement)
-                    if armor != None:
+                    armor = processArmor(armorElement, lastListTitle)
+                    if armor != None and 'listTitle' in armor:
+                        lastListTitle = armor["listTitle"]
+                    elif armor != None:
                         valuesArray.append(armor)
 
             else:
@@ -258,6 +271,8 @@ def processRow(rowElement, shipBeingUpdated):
 
 
 #Main script
+global numberOfImagesForSubsItems;
+
 websiteRoot = 'https://en.wikipedia.org'
 shipPages = [
                 {"url": "https://en.wikipedia.org/wiki/USS_Iowa_(BB-61)", "configuration": "0"},
@@ -265,6 +280,7 @@ shipPages = [
             ]
 ships = []
 maxNumberOfImagesForAShip = 5
+numberOfImagesForSubsItems = 0
 for page in shipPages:
     #Parrellize ?
     ship = {'configuration': page['configuration']}
