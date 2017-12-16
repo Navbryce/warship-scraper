@@ -283,6 +283,7 @@ maxNumberOfImagesForAShip = 5
 numberOfImagesForSubsItems = 0
 for page in shipPages:
     #Parrellize ?
+    #BINARY SEARCH TREES FOR COMMON ATTRIBUTES
     ship = {'configuration': page['configuration']}
     page = requests.get(page['url'])
     tree = html.fromstring(page.content)
