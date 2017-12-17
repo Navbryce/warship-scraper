@@ -53,9 +53,19 @@ def parseIntFromStringArray(haystackArray, intToKeep):
 
 
 def getWordsBeforeUnit(haystack, unit, numberOfWords):
-    unit = ' ' + unit   #ensures it's not just part of word
+    unit = ' ' + unit   #ensures it's not just part of word. in case it's at the end
     words = []
-    positionOfUnit = haystack.find(unit)
+    positionOfUnit = haystack.find(unit) #because of the space
+    unitLength = len(unit)
+
+    while positionOfUnit != -1 and positionOfUnit + unitLength != len(haystack) and haystack[positionOfUnit + unitLength] != ' ': #makes sure the unit is by itself if not at the end of the string
+        if haystack[positionOfUnit + 1:].find(unit) >= 0:
+            positionOfUnit = positionOfUnit + 1 + haystack[positionOfUnit + 1:].find(unit)
+        else:
+            positionOfUnit = -1
+
+
+
     if positionOfUnit != -1:
         haystack = haystack[0:positionOfUnit] #really crops out the space before the unit and everyhthing eafter
         mostRecentSpace =  len(haystack)
@@ -180,7 +190,7 @@ def processArmament(armamentElement):
                 if linkCounter == len(armamentLinks) - 1:
                     armamentPage = html.fromstring(requests.get(websiteRoot + link.attrib['href']).content)
                     armamentContent = armamentPage.cssselect('#bodyContent')[0]
-                    pictures = getImages(armamentContent, numberOfImagesForSubsItems)
+                    pictures = getImages(armamentContent, numberOfImagesForSubItems)
                 linkCounter += 1
 
             armamentFullName = createStringFromArray(0, linkWordsArray)
@@ -252,18 +262,32 @@ def processArmor(armorElement, listTitleInput):
     elif listTitle is not None:
         armorSerializable = {'listTitle': listTitle}
     return armorSerializable
-def processSpeed(speedRaw, ship): #Will modify ship object so no need to return value
-    speedValue = getWordsBeforeUnit(speedRaw, 'kn', 1)[0] #Unit should be in knots
-    speedDictionary = {'speedValue': speedValue,
-                        'speedUnit': 'kn'
-                      }
-    ship['speed'] = speedDictionary
 
 def processClassAndType(valueString, ship):
     wordsArray = getArrayOfWords(valueString, None, -1)
     ship['class'] = wordsArray[0]
 
     ship['type'] = createStringFromArray(1, wordsArray) #All words after class are part of the type
+def processStandardValue(valueString):
+    """valueString -- Value string
+        Looks for certain units. If the value contains a unit will return a dictionary with the unit and value keys.
+        Else, it will just return the valueString
+    """
+    oddCharacters = ["(", ")"]
+    unitsToSearchFor = ["m", "km", "t", "long tons", "tons", "kW", "kn", "knots"]
+
+    returnValue = valueString #Will return the valueString if no units are found
+
+    searchString = removeOddCharacters(valueString, oddCharacters) #Removes parentheses because some units are surrounded by them
+    for unit in unitsToSearchFor:
+        wordsBeforeUnit = getWordsBeforeUnit(searchString, unit, 1) #Returns an array of words before the unit of at most size 1. Note: units must be surrounded by spaces
+        if len(wordsBeforeUnit) == 1: #If true, the string contains the unit
+            returnValue = {
+                "value": wordsBeforeUnit[0],
+                "unit": unit
+            }
+            break
+    return returnValue
 
 def categorizeElement(key, value, valueElement, ship): #Will categorize elements that are not already in "arrays." For example, commissioned, decomissioned, recomissioned, ... are all listed as separate elements in the highest level of table
     #the key value is the key in the highest level of the info table aka under the info table: <key>:<some value>. Note: key has been converted to lowercase
@@ -283,8 +307,6 @@ def categorizeElement(key, value, valueElement, ship): #Will categorize elements
         if date is not None:
             dateElement = {"significance": key, "date": date}
             ship['importantDates'].append(dateElement)
-    elif key.find('speed') >= 0:
-        processSpeed(value, ship)
     elif key.find('awards') >= 0: #Some pages have this as a list. Some only have it as a single element. Standardizes to an array
         ship['awards'].append(value)
     elif key.find('class') >=0: #Separates class and type in a cell element. First word is always class. Words after are always type. Some ships only have a "type" not a class. This statement won't evluate in that situation, so it still works.
@@ -296,7 +318,7 @@ def categorizeElement(key, value, valueElement, ship): #Will categorize elements
         #There's only one gun
         ship["armament"].append(processArmament(valueElement))
     else:   #Catch all
-        ship[key] = value
+        ship[key] = processStandardValue(value)
 
 def processRow(rowElement, shipBeingUpdated):
     cellElements = rowElement.cssselect("td")
@@ -308,6 +330,7 @@ def processRow(rowElement, shipBeingUpdated):
             categorizeElement(key, formatString(valueElement.text_content()), valueElement, ship) # the object referenced by 'ship' modified in function. thus, no ship returned because reference points to the same object
         else :
             valuesArray = []
+            addValuesArrayToShip = True
             if key == "armament":
                 configuration = int(shipBeingUpdated['configuration']) #Which configuration do you want if their are multiple configurations
                 configurationCounter = -1 #If multiple configurations, the first one will have a date at the top of it
@@ -337,29 +360,51 @@ def processRow(rowElement, shipBeingUpdated):
                     elif armor != None:
                         valuesArray.append(armor)
 
+            elif key == "installed power": #Some ships just have the installed power value listed. Some have a list of items under installed power including the value, boilers, ... This will just keep the actual value
+                for powerElement in arrayValueElements:
+                    value = formatString(powerElement.text_content())
+                    processedValue = processStandardValue(value)
+                    if processedValue != value: #a dictionary was returned meaning it found a unit (kW)
+                        ship[key] = processedValue
+                        addValuesArrayToShip = False
+                        break #exits the for loop
             else:
                 for arrayValueElement in arrayValueElements:
-                    value = formatString(arrayValueElement.text_content())
+                    value = processStandardValue(formatString(arrayValueElement.text_content()))
                     valuesArray.append(value)
             if key.lower().find("awards") >= 0: #Sometimes awards are listed as a list. Sometimes they are just a single value. categorizeElement makes the awards key "awards". This converts "honors and awards" to "awards" as the key
                 key = "awards"
-            shipBeingUpdated[key] = valuesArray
+            if addValuesArrayToShip:
+                shipBeingUpdated[key] = valuesArray
     return shipBeingUpdated
 
 
 #Main script
-global numberOfImagesForSubsItems;
+global numberOfImagesForSubItems
+global maxNumberOfImagesForAShip
 
-websiteRoot = 'https://en.wikipedia.org'
-shipPages = [
-                {"url": "https://en.wikipedia.org/wiki/USS_Monitor", "configuration": "0"},
-                {"url": "https://en.wikipedia.org/wiki/German_battleship_Gneisenau", "configuration": "0"},
-                {"url": "https://en.wikipedia.org/wiki/HMS_Victory", "configuration": "0"}
-            ]
-ships = []
-maxNumberOfImagesForAShip = 5
-numberOfImagesForSubsItems = 5
+#GET SETTINGS
+
+
+filePath = "./boatsScrape.json"
+
+with open(filePath, 'r') as file:
+    ingestSettings = json.load(file)
+
+
+
+shipPages = ingestSettings["shipPages"]
+
+websiteRoot = ingestSettings["websiteRoot"]
+
+maxNumberOfImagesForAShip = ingestSettings["maxNumberOfImagesForAShip"]
+numberOfImagesForSubItems = ingestSettings["numberOfImagesForSubsItems"]
+
+
+# BEGINS SCRAPING
 shipIDCounter = 0
+ships = []
+
 for page in shipPages:
     #Parrellize ?
     #BINARY SEARCH TREES FOR COMMON ATTRIBUTES
@@ -371,6 +416,7 @@ for page in shipPages:
     #Scrapes ship name
     shipName = tree.cssselect("#firstHeading")[0].text_content()
     ship = {'ID': shipIDCounter,
+            'scrapeURL': page['url'], #used to check uniqueness of ship AKA has it already been added. Note: I could check name and date (some ships have the same name), but I only need to do 1 comparison with URL
             'shipName': shipName,
             'configuration': page['configuration'],
             'importantDates': [],
@@ -386,7 +432,7 @@ for page in shipPages:
     #get most ship infoBox
     rows = infoBox.cssselect("tr")
     for row in rows:
-        ship = processRow(row, ship)
+        processRow(row, ship)
 
 
     #print (infoBox.text_content())

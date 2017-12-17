@@ -1,0 +1,11 @@
+{
+    "websiteRoot": "https://en.wikipedia.org",
+    "maxNumberOfImagesForAShip": 5,
+    "numberOfImagesForSubsItems": 5,
+    "shipPages": [
+                    {"url": "https://en.wikipedia.org/wiki/USS_Monitor", "configuration": "0"},
+                    {"url": "https://en.wikipedia.org/wiki/German_battleship_Gneisenau", "configuration": "0"},
+                    {"url": "https://en.wikipedia.org/wiki/HMS_Victory", "configuration": "0"}
+                ]
+
+}
