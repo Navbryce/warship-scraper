@@ -5,6 +5,8 @@ from lxml import html
 from Date import Date
 from unidecode import unidecode
 import requests
+import sys
+import traceback
 import json
 
 #Global variables
@@ -31,6 +33,24 @@ def formatString(string):
     oddCharacters = ['\"',':']
     string = normalizeString(string, True)
     return removeOddCharacters(string, oddCharacters)
+def parseIntFromStringArray(haystackArray, intToKeep):
+    intCounter = -1
+    """
+    intToKeep -- 0: first int 1: second int
+    Will return None if no int found
+    """
+    intObject = None
+    for word in haystackArray:
+        try:
+            intObject = int(word)
+            intCounter += 1
+            if intCounter == intToKeep:
+                break
+        except:
+            #traceback.print_exc()
+            intObject = None
+    return intObject
+
 
 def getWordsBeforeUnit(haystack, unit, numberOfWords):
     unit = ' ' + unit   #ensures it's not just part of word
@@ -55,7 +75,16 @@ def getWordsBeforeUnit(haystack, unit, numberOfWords):
             position-=1
     return words
 
-
+def createStringFromArray(startingIndex, arrayOfWords): #creates string from array of words. first word is at starting index
+    wordCounter = startingIndex
+    string = ""
+    while wordCounter < len(arrayOfWords):
+        if wordCounter == len(arrayOfWords) - 1:
+            string += arrayOfWords[wordCounter]
+        else:
+            string += arrayOfWords[wordCounter] + " "
+        wordCounter += 1
+    return string
 
 def getArrayOfWords(haystack, needle, numberOfWords): #number of words including needle. if needle is None, then start at beginning of haystack. if numberOfWords==-1, then all words
     words = []
@@ -92,58 +121,89 @@ def getImages(pageElement, maxImages): #Page element = DOM element that is a par
     imageObjArray = []
     imagesWrappers = pageElement.cssselect(".thumb")
     imageCounter = 0
-    for imageWrapper in imagesWrappers: #Image wrapper is the container for the caption and image
-        image = imageWrapper.cssselect("img")[0] #Actual image object
-        caption = imageWrapper.cssselect(".thumbcaption")[0] #Holds the description
+    if maxImages > 0:
+        for imageWrapper in imagesWrappers: #Image wrapper is the container for the caption and image
+            image = imageWrapper.cssselect("img")[0] #Actual image object
+            caption = imageWrapper.cssselect(".thumbcaption")[0] #Holds the description
 
-        imageObject = {}
-        src = image.attrib["src"][2:] #remove the first two characters of the URL because they are a filepaths for the server ('//'), not URL. Represent root.
-        description = formatString(caption.text_content())
-        imageObject["src"] = src
-        imageObject["description"] = description
-        if len(description)>0: #Filters out non-ship related pictures
-            #Filters out unwanted images such as "svgs"
-            filterOutKeyWords = ['svg']
-            containsKeyWord = False
-            for keyword in filterOutKeyWords:
-                if src.find(keyword) >= 0:
-                    containsKeyWord = True
-            if containsKeyWord == False:
-                imageObjArray.append(imageObject)
-                imageCounter += 1
-                if imageCounter == maxImages:
-                    break
+            imageObject = {}
+            src = image.attrib["src"][2:] #remove the first two characters of the URL because they are a filepaths for the server ('//'), not URL. Represent root.
+            description = formatString(caption.text_content())
+            imageObject["src"] = src
+            imageObject["description"] = description
+            if len(description)>0: #Filters out non-ship related pictures
+                #Filters out unwanted images such as "svgs"
+                filterOutKeyWords = ['svg']
+                containsKeyWord = False
+                for keyword in filterOutKeyWords:
+                    if src.find(keyword) >= 0:
+                        containsKeyWord = True
+                if containsKeyWord == False:
+                    imageObjArray.append(imageObject)
+                    imageCounter += 1
+                    if imageCounter == maxImages:
+                        break
     return imageObjArray
 
 #Returns a Date object. Assumes the date is in the "day month year" format
 def createDateObject(dateString):
-    return Date.strptime(dateString, "%d %B %Y")
+    dateObject = None
+    try:
+        dateObject = Date.strptime(dateString, "%d %B %Y")
+    except:
+        try:
+            dateObject = Date.strptime(dateString, "%B %Y")
+        except:
+            try:
+                dateObject = Date.strptime(dateString, "%Y")
+            except:
+                print("A date object could not be created from the string: " + dateString)
+
+    return dateObject
 
 def processArmament(armamentElement):
+    pictures = []
+    armamentString = formatString(armamentElement.text_content())
     armament = None
-    arrayOfWords = getArrayOfWords(formatString((armamentElement.text_content())), None, -1)
+    arrayOfWords = getArrayOfWords(armamentString, None, -1)
     if(len(arrayOfWords) > 1): #if it equals 1, then it's a date (extraneous, not armament, date of gun configuration)
-        armamentLink = armamentElement.cssselect('a')[0] #there should be one and only one link in an armament element. the link should be the full name of the gun
-        armamentFullName = formatString(armamentLink.text_content())
+        armamentLinks = armamentElement.cssselect('a')
+        armamentLink = None
 
-        armament = Armament(armamentFullName, arrayOfWords[0])
+
+        if len(armamentLinks) > 0:#Assumes the full name is contained within links if evaluates to true
+            linkWordsArray = [] #each 'word' is probably a phrase
+            linkCounter = 0
+            for link in armamentLinks:
+                linkWordsArray.append(formatString(link.text_content()))
+                #GETS IMAGES for armament. Uses the last armament link if there are more than one.
+                if linkCounter == len(armamentLinks) - 1:
+                    armamentPage = html.fromstring(requests.get(websiteRoot + link.attrib['href']).content)
+                    armamentContent = armamentPage.cssselect('#bodyContent')[0]
+                    pictures = getImages(armamentContent, numberOfImagesForSubsItems)
+                linkCounter += 1
+
+            armamentFullName = createStringFromArray(0, linkWordsArray)
+        else: #tries to get the name without the link if there are no links
+            arrayofWordsIncludingX = getArrayOfWords(armamentString, "x", -1)
+            armamentFullName = createStringFromArray(1, arrayofWordsIncludingX)
+
+        quantity = parseIntFromStringArray(arrayOfWords, 0)
+        armament = Armament(armamentFullName, quantity)
 
 
         charactersToRemove = ['(', ')']
-        armamentFullNameWithout = removeOddCharacters(armamentFullName, charactersToRemove)
-        unitsToTry = ["mm", "cm"] #Prioritizes the first in the array
+        armamentFullTextWithout = removeOddCharacters(armamentString, charactersToRemove) #not necessarily the full name
+        unitsToTry = ["mm", "cm", "pounder"] #Prioritizes the first in the array
         for unit in unitsToTry:
-            armamentSizeArray = getWordsBeforeUnit(armamentFullNameWithout, unit, 1)
+            armamentSizeArray = getWordsBeforeUnit(armamentFullTextWithout, unit, 1)
             if len(armamentSizeArray) == 1:
                 armament.size = armamentSizeArray[0]
                 armament.unit = unit
                 break #You want to prioritze the first unit
         armament = armament.toSerializableForm()
-        #Get images
-        if armamentLink is not None:
-            armamentPage = html.fromstring(requests.get(websiteRoot + armamentLink.attrib['href']).content)
-            armamentContent = armamentPage.cssselect('#bodyContent')[0]
-            armament['pictures'] = getImages(armamentContent, numberOfImagesForSubsItems)
+        armament['pictures'] = pictures #Should really be set in the armament constructor. Pictures defined at the top of the function and assigned under certain conditions in the link if statement
+
     return armament
 
 def processArmor(armorElement, listTitleInput):
@@ -199,8 +259,14 @@ def processSpeed(speedRaw, ship): #Will modify ship object so no need to return 
                       }
     ship['speed'] = speedDictionary
 
-def categorizeElement(key, value, ship): #Will categorize elements that are not already in "arrays." For example, commissioned, decomissioned, recomissioned, ... are all listed as separate elements in the highest level of table
-    key = key.lower() #the key value is the key in the highest level of the info table
+def processClassAndType(valueString, ship):
+    wordsArray = getArrayOfWords(valueString, None, -1)
+    ship['class'] = wordsArray[0]
+
+    ship['type'] = createStringFromArray(1, wordsArray) #All words after class are part of the type
+
+def categorizeElement(key, value, valueElement, ship): #Will categorize elements that are not already in "arrays." For example, commissioned, decomissioned, recomissioned, ... are all listed as separate elements in the highest level of table
+    #the key value is the key in the highest level of the info table aka under the info table: <key>:<some value>. Note: key has been converted to lowercase
 
     #Find the category that applies
     importantDateKeyWords = ['commission', 'launch', 'struck', 'laid', 'ordered']
@@ -213,26 +279,36 @@ def categorizeElement(key, value, ship): #Will categorize elements that are not 
 
     #Add element to category. Perform necessary operations
     if importantDate:
-        if 'importantDates' not in ship: #creates the array if it doesn't already exist
-            ship['importantDates'] = []
-        dateElement = {"significance": key, "date": createDateObject(value).toSerializableForm()}
-        ship['importantDates'].append(dateElement)
+        date = createDateObject(value).toSerializableForm()
+        if date is not None:
+            dateElement = {"significance": key, "date": date}
+            ship['importantDates'].append(dateElement)
     elif key.find('speed') >= 0:
         processSpeed(value, ship)
+    elif key.find('awards') >= 0: #Some pages have this as a list. Some only have it as a single element. Standardizes to an array
+        ship['awards'].append(value)
+    elif key.find('class') >=0: #Separates class and type in a cell element. First word is always class. Words after are always type. Some ships only have a "type" not a class. This statement won't evluate in that situation, so it still works.
+        processClassAndType(value, ship)
+    elif key == "armor" or key == "armour":
+        #There's only a single unit of armor AKA there must be none because the key is "armor" meaning there is no type key
+        ship["armor"] = []
+    elif key == "armament":
+        #There's only one gun
+        ship["armament"].append(processArmament(valueElement))
     else:   #Catch all
         ship[key] = value
 
 def processRow(rowElement, shipBeingUpdated):
     cellElements = rowElement.cssselect("td")
     if len(cellElements) == 2 and len(cellElements[1].cssselect('img')) == 0: #Ensure it actually has a value and the value does not have a nimage
-        key = formatString(cellElements[0].text_content())
+        key = formatString(cellElements[0].text_content()).lower() #format string and convert it to lower case
         valueElement = cellElements[1]
         arrayValueElements = valueElement.cssselect("ul>li")
         if len(arrayValueElements)==0: #dealing with a single value element aka not an array
-            categorizeElement(key, formatString(valueElement.text_content()), ship) # the object referenced by 'ship' modified in function. thus, no ship returned because reference points to the same object
+            categorizeElement(key, formatString(valueElement.text_content()), valueElement, ship) # the object referenced by 'ship' modified in function. thus, no ship returned because reference points to the same object
         else :
             valuesArray = []
-            if key == "Armament":
+            if key == "armament":
                 configuration = int(shipBeingUpdated['configuration']) #Which configuration do you want if their are multiple configurations
                 configurationCounter = -1 #If multiple configurations, the first one will have a date at the top of it
                 armamentElementCounter = 0
@@ -252,7 +328,7 @@ def processRow(rowElement, shipBeingUpdated):
 
                     armamentElementCounter += 1
 
-            elif key == "Armor":
+            elif key == "armor":
                 lastListTitle = None
                 for armorElement in arrayValueElements:
                     armor = processArmor(armorElement, lastListTitle)
@@ -265,7 +341,8 @@ def processRow(rowElement, shipBeingUpdated):
                 for arrayValueElement in arrayValueElements:
                     value = formatString(arrayValueElement.text_content())
                     valuesArray.append(value)
-
+            if key.lower().find("awards") >= 0: #Sometimes awards are listed as a list. Sometimes they are just a single value. categorizeElement makes the awards key "awards". This converts "honors and awards" to "awards" as the key
+                key = "awards"
             shipBeingUpdated[key] = valuesArray
     return shipBeingUpdated
 
@@ -275,22 +352,32 @@ global numberOfImagesForSubsItems;
 
 websiteRoot = 'https://en.wikipedia.org'
 shipPages = [
-                {"url": "https://en.wikipedia.org/wiki/USS_Iowa_(BB-61)", "configuration": "0"},
-                {"url": "https://en.wikipedia.org/wiki/German_battleship_Gneisenau", "configuration": "0"}
+                {"url": "https://en.wikipedia.org/wiki/USS_Monitor", "configuration": "0"},
+                {"url": "https://en.wikipedia.org/wiki/German_battleship_Gneisenau", "configuration": "0"},
+                {"url": "https://en.wikipedia.org/wiki/HMS_Victory", "configuration": "0"}
             ]
 ships = []
 maxNumberOfImagesForAShip = 5
-numberOfImagesForSubsItems = 0
+numberOfImagesForSubsItems = 5
+shipIDCounter = 0
 for page in shipPages:
     #Parrellize ?
     #BINARY SEARCH TREES FOR COMMON ATTRIBUTES
-    ship = {'configuration': page['configuration']}
-    page = requests.get(page['url'])
-    tree = html.fromstring(page.content)
+
+    webpage = requests.get(page['url'])
+    tree = html.fromstring(webpage.content)
     infoBox = tree.cssselect(".infobox")[0]
     content = tree.cssselect("#bodyContent")[0]
     #Scrapes ship name
-    ship["name"] = tree.cssselect("#firstHeading")[0].text_content()
+    shipName = tree.cssselect("#firstHeading")[0].text_content()
+    ship = {'ID': shipIDCounter,
+            'shipName': shipName,
+            'configuration': page['configuration'],
+            'importantDates': [],
+            'awards': [],
+            'armament': [],
+            'armor': []
+            }
     shipImages = []
 
     #Scrapes all images and descriptions
@@ -307,4 +394,5 @@ for page in shipPages:
 
     #Appends the ship to the list of ships
     ships.append(ship)
+    shipIDCounter+=1
 print(json.dumps(ships))
