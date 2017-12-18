@@ -5,7 +5,8 @@
     "shipPages": [
                     {"url": "https://en.wikipedia.org/wiki/USS_Monitor", "configuration": "0"},
                     {"url": "https://en.wikipedia.org/wiki/German_battleship_Gneisenau", "configuration": "0"},
-                    {"url": "https://en.wikipedia.org/wiki/HMS_Victory", "configuration": "0"}
+                    {"url": "https://en.wikipedia.org/wiki/HMS_Victory", "configuration": "0"},
+                    {"url": "https://en.wikipedia.org/wiki/German_battleship_Scharnhorst", "configuration": "0"}
                 ]
 
 }

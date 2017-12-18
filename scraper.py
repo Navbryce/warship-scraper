@@ -413,6 +413,11 @@ for page in shipPages:
     tree = html.fromstring(webpage.content)
     infoBox = tree.cssselect(".infobox")[0]
     content = tree.cssselect("#bodyContent")[0]
+    textContent = content.cssselect("#mw-content-text")[0]
+    firstParagraph = textContent.cssselect("p")[0]
+    description = formatString(firstParagraph.text_content())
+    oddCharactersInDescription = ["[a]"]
+    description = removeOddCharacters(description, oddCharactersInDescription)
     #Scrapes ship name
     shipName = tree.cssselect("#firstHeading")[0].text_content()
     ship = {'ID': shipIDCounter,
@@ -422,7 +427,8 @@ for page in shipPages:
             'importantDates': [],
             'awards': [],
             'armament': [],
-            'armor': []
+            'armor': [],
+            'description': description
             }
     shipImages = []
 
