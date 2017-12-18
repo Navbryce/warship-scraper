@@ -139,7 +139,7 @@ def getImages(pageElement, maxImages): #Page element = DOM element that is a par
             imageObject = {}
             src = image.attrib["src"][2:] #remove the first two characters of the URL because they are a filepaths for the server ('//'), not URL. Represent root.
             description = formatString(caption.text_content())
-            imageObject["src"] = src
+            imageObject["src"] = "https://" + src
             imageObject["description"] = description
             if len(description)>0: #Filters out non-ship related pictures
                 #Filters out unwanted images such as "svgs"
@@ -154,6 +154,16 @@ def getImages(pageElement, maxImages): #Page element = DOM element that is a par
                     if imageCounter == maxImages:
                         break
     return imageObjArray
+def getInfoBoxPicture(infobox):
+    """returns picture object"""
+    picture = infobox.cssselect("img")[0]
+    src = "https://" + picture.attrib["src"][2:] #remove the first two characters of the URL because they are a filepaths for the server ('//'), not URL. Represent root.
+    description = formatString(picture.attrib["alt"])
+    pictureObject = {
+        "src":  src,
+        "description": description
+    }
+    return pictureObject
 
 #Returns a Date object. Assumes the date is in the "day month year" format
 def createDateObject(dateString):
@@ -422,7 +432,6 @@ for page in shipPages:
     shipName = tree.cssselect("#firstHeading")[0].text_content()
     ship = {'ID': shipIDCounter,
             'scrapeURL': page['url'], #used to check uniqueness of ship AKA has it already been added. Note: I could check name and date (some ships have the same name), but I only need to do 1 comparison with URL
-            'shipName': shipName,
             'configuration': page['configuration'],
             'importantDates': [],
             'awards': [],
@@ -433,7 +442,9 @@ for page in shipPages:
     shipImages = []
 
     #Scrapes all images and descriptions
-    ship["pictures"] = getImages(content, maxNumberOfImagesForAShip)
+    mainPicture = getInfoBoxPicture(infoBox) #Gets the main picture in the infobox
+    textPictures = getImages(textContent, maxNumberOfImagesForAShip - 1) #-1 because of the main picture
+    ship["pictures"] = [mainPicture] + textPictures
 
     #get most ship infoBox
     rows = infoBox.cssselect("tr")
