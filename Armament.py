@@ -27,7 +27,11 @@ class Armament(object):
         """
         isCannon = False
         if self.unit is not None:
-            isCannon = self.unit == "pounder"
+            cannonUnits = ["pounder", "kg"]
+            for cannonUnit in cannonUnits:
+                if self.unit == cannonUnit:
+                    isCannon = True
+                    break
             self.isCannon = isCannon
         return isCannon
 

@@ -214,7 +214,9 @@ def processArmament(armamentElement):
 
         charactersToRemove = ['(', ')']
         armamentFullTextWithout = removeOddCharacters(armamentString, charactersToRemove) #not necessarily the full name
-        unitsToTry = ["mm", "cm", "pounder"] #Prioritizes the first in the array
+        characterToSpace = ['/']
+        armamentFullTextWithout = replaceOddCharacters(armamentFullTextWithout, characterToSpace, ' ')
+        unitsToTry = ["mm", "cm", "kg"] #Prioritizes the first in the array
         for unit in unitsToTry:
             armamentSizeArray = getWordsBeforeUnit(armamentFullTextWithout, unit, 1)
             if len(armamentSizeArray) == 1:
@@ -284,7 +286,7 @@ def processStandardValue(valueString):
         Else, it will just return the valueString
     """
     oddCharacters = ["(", ")"]
-    unitsToSearchFor = ["m", "km", "t", "long tons", "tons", "kW", "kn", "knots"]
+    unitsToSearchFor = ["m", "km", "t", "long tons", "tons", "kW", "kn", "knots", "in", "inch"]
 
     returnValue = valueString #Will return the valueString if no units are found
 
