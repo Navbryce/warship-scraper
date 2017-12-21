@@ -33,6 +33,21 @@ def formatString(string):
     oddCharacters = ['\"',':']
     string = normalizeString(string, True)
     return removeOddCharacters(string, oddCharacters)
+def isWordInt(word):
+    """
+    word - Word being observed
+    If: the word is an int, the int will be returned
+    Else: nothing will be returned
+    """
+    try:
+        oddChracters = [","]
+        word = removeOddCharacters(word, oddChracters)
+        intObject = int(word)
+    except:
+        #traceback.print_exc()
+        intObject = None
+    return intObject
+
 def parseIntFromStringArray(haystackArray, intToKeep):
     intCounter = -1
     """
@@ -41,14 +56,12 @@ def parseIntFromStringArray(haystackArray, intToKeep):
     """
     intObject = None
     for word in haystackArray:
-        try:
-            intObject = int(word)
+        possibleInteger = isWordInt(word)
+        if possibleInteger is not None:
+            intObject = possibleInteger
             intCounter += 1
             if intCounter == intToKeep:
                 break
-        except:
-            #traceback.print_exc()
-            intObject = None
     return intObject
 
 
@@ -286,11 +299,13 @@ def processStandardValue(valueString):
         Else, it will just return the valueString
     """
     oddCharacters = ["(", ")"]
+    replaceWithSpaceCharacters = ["[", "]", "/"]
     unitsToSearchFor = ["m", "km", "t", "long tons", "tons", "kW", "kn", "knots", "in", "inch"]
 
     returnValue = valueString #Will return the valueString if no units are found
 
     searchString = removeOddCharacters(valueString, oddCharacters) #Removes parentheses because some units are surrounded by them
+    searchString = replaceOddCharacters(searchString, replaceWithSpaceCharacters, ' ')
     for unit in unitsToSearchFor:
         wordsBeforeUnit = getWordsBeforeUnit(searchString, unit, 1) #Returns an array of words before the unit of at most size 1. Note: units must be surrounded by spaces
         if len(wordsBeforeUnit) == 1: #If true, the string contains the unit
@@ -301,20 +316,52 @@ def processStandardValue(valueString):
             break
     return returnValue
 
+def calculateComplement(valueString, ship):
+    """
+    valueString - The information string
+    ship - The ship being modified
+
+    THIS METHOD MIGHT BE CALLED MULTIPLE TIMES FOR ONE SHIP. IF it is, it will add the existing value with the new value.
+    """
+    currentComplementValue = 0
+    if "complement" in ship:
+        currentComplementValue = ship["complement"]
+    wordsArray = getArrayOfWords(valueString, None, -1)
+    for word in wordsArray:
+        possibleNumber = isWordInt(word)
+        if possibleNumber is not None:
+            currentComplementValue += possibleNumber
+
+    ship['complement'] = currentComplementValue
+
+
+
+
 def categorizeElement(key, value, valueElement, ship): #Will categorize elements that are not already in "arrays." For example, commissioned, decomissioned, recomissioned, ... are all listed as separate elements in the highest level of table
     #the key value is the key in the highest level of the info table aka under the info table: <key>:<some value>. Note: key has been converted to lowercase
 
     #Find the category that applies
     importantDateKeyWords = ['commission', 'launch', 'struck', 'laid', 'ordered']
+    physicalAttributeKeyWord = ['draught', 'displacement', 'length', 'beam', 'depth of hold', 'tons burthen', 'speed', 'draft', 'range', 'installed power']
 
+    physicalAttribute = False
     importantDate = False
-    for keyWord in importantDateKeyWords: #If else separate from for loop for organizational reasons rather. I didn't want a bunch of nested for loops and if statements
+
+    for keyWord in physicalAttributeKeyWord:
         if key.find(keyWord) >= 0:
-            importantDate = True
+            physicalAttribute = True
             break
 
+    if physicalAttribute == False:
+        for keyWord in importantDateKeyWords: #If else separate from for loop for organizational reasons rather. I didn't want a bunch of nested for loops and if statements
+            if key.find(keyWord) >= 0:
+                importantDate = True
+                break
+
     #Add element to category. Perform necessary operations
-    if importantDate:
+    if physicalAttribute:
+        ship["physicalAttributes"][key] = processStandardValue(value) #ship["physicalAttributes"] object defined at ship construction
+    elif importantDate:
         date = createDateObject(value).toSerializableForm()
         if date is not None:
             dateElement = {"significance": key, "date": date}
@@ -329,6 +376,8 @@ def categorizeElement(key, value, valueElement, ship): #Will categorize elements
     elif key == "armament":
         #There's only one gun
         ship["armament"].append(processArmament(valueElement))
+    elif key == "complement":
+        calculateComplement(value, ship)
     else:   #Catch all
         ship[key] = processStandardValue(value)
 
@@ -341,6 +390,8 @@ def processRow(rowElement, shipBeingUpdated):
         if len(arrayValueElements)==0: #dealing with a single value element aka not an array
             categorizeElement(key, formatString(valueElement.text_content()), valueElement, ship) # the object referenced by 'ship' modified in function. thus, no ship returned because reference points to the same object
         else :
+            keysWithNoArray = ["draught", "length", "displacement"] #Should contain the keys that should NOT have an array of objects. For example, some ships have multiple displacements listed--scraper should only keep one
+
             valuesArray = []
             addValuesArrayToShip = True
             if key == "armament":
@@ -380,12 +431,28 @@ def processRow(rowElement, shipBeingUpdated):
                         ship[key] = processedValue
                         addValuesArrayToShip = False
                         break #exits the for loop
+            elif key == "complement":
+                for complementElement in arrayValueElements:
+                    valueString = formatString(complementElement.text_content())
+                    categorizeElement(key, valueString, complementElement, ship) #See how categorize elemtn categorizes complement. It will sum the values of all complement elements
+                addValuesArrayToShip = False
             else:
-                for arrayValueElement in arrayValueElements:
-                    value = processStandardValue(formatString(arrayValueElement.text_content()))
-                    valuesArray.append(value)
+                #If the property should not have an array of objects, it will only save the LAST value not an array of values
+                for noArrayKey in keysWithNoArray: #keysWithNoArray defined at top
+                    if key == noArrayKey:
+                        lastValueElement = arrayValueElements[len(arrayValueElements) - 1] #Will only save the last value
+                        categorizeElement(key, formatString(lastValueElement.text_content()), lastValueElement, ship)
+                        addValuesArrayToShip = False
+                        break
+
+                if addValuesArrayToShip:
+                    for arrayValueElement in arrayValueElements:
+                        value = processStandardValue(formatString(arrayValueElement.text_content()))
+                        valuesArray.append(value)
+
             if key.lower().find("awards") >= 0: #Sometimes awards are listed as a list. Sometimes they are just a single value. categorizeElement makes the awards key "awards". This converts "honors and awards" to "awards" as the key
                 key = "awards"
+
             if addValuesArrayToShip:
                 shipBeingUpdated[key] = valuesArray
     return shipBeingUpdated
@@ -398,14 +465,17 @@ global maxNumberOfImagesForAShip
 #GET SETTINGS
 
 
-filePath = "./boatsScrape.json"
+settingsPath = "./shipSettings.json"
+inputPath = "./shipsToScrape.json"
 
-with open(filePath, 'r') as file:
+with open(settingsPath, 'r') as file:
     ingestSettings = json.load(file)
 
+with open(inputPath, 'r') as file:
+    shipsInput = json.load(file)
 
 
-shipPages = ingestSettings["shipPages"]
+shipPages = shipsInput
 
 websiteRoot = ingestSettings["websiteRoot"]
 
@@ -439,7 +509,8 @@ for page in shipPages:
             'awards': [],
             'armament': [],
             'armor': [],
-            'description': description
+            'description': description,
+            'physicalAttributes': {}
             }
     shipImages = []
 

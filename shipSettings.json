@@ -1,0 +1,5 @@
+{
+    "websiteRoot": "https://en.wikipedia.org",
+    "maxNumberOfImagesForAShip": 5,
+    "numberOfImagesForSubsItems": 5
+}
