@@ -5,12 +5,14 @@ class Armament(object):
     size = None
     isMissile = None
     isCannon = False
+    isTorpedo = False
 
 
     def __init__(self, fullName, numberOfBarrels):
         self.fullName = fullName
         self.numberOfBarrels = numberOfBarrels
         self.isMissile = self.isMissileCheck(fullName)
+        self.isTorpedo = self.isTorpedoCheck(fullName)
 
     def isMissileCheck(self, fullName):
         isMissile = False
@@ -34,6 +36,18 @@ class Armament(object):
                     break
             self.isCannon = isCannon
         return isCannon
+    def isTorpedoCheck(self, fullName):
+        """
+        Can only be called if unit has been set
+        Will return false if no unit
+        """
+        isTorpedo = False
+        torpedoKeywords = ["torpedo"]
+        for torpedoKeyword in torpedoKeywords:
+            if fullName.find(torpedoKeyword) >= 0:
+                isTorpedo = True
+                break
+        return isTorpedo
 
     def toSerializableForm(self):
         armament = {'fullName': self.fullName,
@@ -43,5 +57,6 @@ class Armament(object):
             armament['size'] = float(self.size)
             armament['unit'] = self.unit
             armament['isCannon'] = self.isCannonCheck()
+            armament['isTorpedo'] = self.isTorpedo
             armament['isMissile'] = self.isMissile
         return armament
