@@ -1,6 +1,7 @@
 
 
 class UnitConversionTable(object):
+    ""
     conversionDictionary = {};
 
 
@@ -46,6 +47,7 @@ class UnitConversionTable(object):
         return unitType
 
 ##Tester
+"""
 conversionCounter = 0
 unitConversionTable = UnitConversionTable()
 while conversionCounter == 0 or input("continue ").find("y") >= 0:
@@ -54,3 +56,4 @@ while conversionCounter == 0 or input("continue ").find("y") >= 0:
     value = input( "What is the value? " )
     print("Converted Value from " + currentUnit + " to " + newUnit + ": ", unitConversionTable.convertUnit(value, currentUnit, newUnit))
     conversionCounter += 1
+"""

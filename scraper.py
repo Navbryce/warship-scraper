@@ -3,6 +3,7 @@ from Armament import Armament
 from Armor import Armor
 from lxml import html
 from Date import Date
+from UnitConversionTable import UnitConversionTable
 from unidecode import unidecode
 import requests
 import sys
@@ -11,6 +12,7 @@ import json
 
 #Global variables
 global websiteRoot #Assigned in the settings area of the script
+global conversionTable #ConversionTable
 
 
 def normalizeString(string, removeNewLines):
@@ -222,20 +224,35 @@ def processArmament(armamentElement):
             armamentFullName = createStringFromArray(1, arrayofWordsIncludingX)
 
         quantity = parseIntFromStringArray(arrayOfWords, 0)
-        armament = Armament(armamentFullName, quantity)
 
 
         charactersToRemove = ['(', ')']
         armamentFullTextWithout = removeOddCharacters(armamentString, charactersToRemove) #not necessarily the full name
         characterToSpace = ['/']
         armamentFullTextWithout = replaceOddCharacters(armamentFullTextWithout, characterToSpace, ' ')
+
         unitsToTry = ["mm", "cm", "kg"] #Prioritizes the first in the array
+        size = None
+        unit = None
         for unit in unitsToTry:
             armamentSizeArray = getWordsBeforeUnit(armamentFullTextWithout, unit, 1)
             if len(armamentSizeArray) == 1:
-                armament.size = armamentSizeArray[0]
-                armament.unit = unit
+                armamentSize = armamentSizeArray[0]
+                armamentUnit = unit
                 break #You want to prioritze the first unit
+        armament = Armament(armamentFullName, quantity, armamentUnit, armamentSize)
+        if armament.isCannon:
+            armament #do nothing current
+        elif armament.isMissile:
+            armament #do nothing currently
+        elif armament.isTorpedo:
+            armament #do nothing currently
+        else: #Unit conversion for normal guns
+            newUnit = "mm"
+            newValue = conversionTable.convertUnit(armament.size, armament.unit, newUnit)
+            armament.unit = newUnit
+            armament.size = newValue
+
         armament = armament.toSerializableForm()
         armament['pictures'] = pictures #Should really be set in the armament constructor. Pictures defined at the top of the function and assigned under certain conditions in the link if statement
 
@@ -484,6 +501,7 @@ numberOfImagesForSubItems = ingestSettings["numberOfImagesForSubsItems"]
 
 
 # BEGINS SCRAPING
+conversionTable = UnitConversionTable()
 shipIDCounter = 0
 ships = []
 

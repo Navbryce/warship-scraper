@@ -8,17 +8,20 @@ class Armament(object):
     isTorpedo = False
 
 
-    def __init__(self, fullName, numberOfBarrels):
+    def __init__(self, fullName, numberOfBarrels, unit, size):
         self.fullName = fullName
         self.numberOfBarrels = numberOfBarrels
-        self.isMissile = self.isMissileCheck(fullName)
-        self.isTorpedo = self.isTorpedoCheck(fullName)
+        self.unit = unit
+        self.size = size
+        self.isMissile = self.isMissileCheck()
+        self.isTorpedo = self.isTorpedoCheck()
+        self.isCannon = self.isCannonCheck()
 
-    def isMissileCheck(self, fullName):
+    def isMissileCheck(self):
         isMissile = False
         missileKeysWords = ['missile']
         for keyword in missileKeysWords:
-            isMissile = fullName.find(keyword) >= 0
+            isMissile = self.fullName.find(keyword) >= 0
             if (isMissile):
                 break
         return isMissile
@@ -36,7 +39,7 @@ class Armament(object):
                     break
             self.isCannon = isCannon
         return isCannon
-    def isTorpedoCheck(self, fullName):
+    def isTorpedoCheck(self):
         """
         Can only be called if unit has been set
         Will return false if no unit
@@ -44,7 +47,7 @@ class Armament(object):
         isTorpedo = False
         torpedoKeywords = ["torpedo"]
         for torpedoKeyword in torpedoKeywords:
-            if fullName.find(torpedoKeyword) >= 0:
+            if self.fullName.find(torpedoKeyword) >= 0:
                 isTorpedo = True
                 break
         return isTorpedo
@@ -56,7 +59,7 @@ class Armament(object):
         if self.size != None:
             armament['size'] = float(self.size)
             armament['unit'] = self.unit
-            armament['isCannon'] = self.isCannonCheck()
+            armament['isCannon'] = self.isCannon
             armament['isTorpedo'] = self.isTorpedo
             armament['isMissile'] = self.isMissile
         return armament
