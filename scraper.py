@@ -4,6 +4,7 @@ from Armor import Armor
 from lxml import html
 from Date import Date
 from UnitConversionTable import UnitConversionTable
+from Calculate import Calculate
 from unidecode import unidecode
 import requests
 import sys
@@ -148,26 +149,33 @@ def getImages(pageElement, maxImages): #Page element = DOM element that is a par
     imageCounter = 0
     if maxImages > 0:
         for imageWrapper in imagesWrappers: #Image wrapper is the container for the caption and image
-            image = imageWrapper.cssselect("img")[0] #Actual image object
-            caption = imageWrapper.cssselect(".thumbcaption")[0] #Holds the description
 
-            imageObject = {}
-            src = image.attrib["src"][2:] #remove the first two characters of the URL because they are a filepaths for the server ('//'), not URL. Represent root.
-            description = formatString(caption.text_content())
-            imageObject["src"] = "https://" + src
-            imageObject["description"] = description
-            if len(description)>0: #Filters out non-ship related pictures
-                #Filters out unwanted images such as "svgs"
-                filterOutKeyWords = ['svg']
-                containsKeyWord = False
-                for keyword in filterOutKeyWords:
-                    if src.find(keyword) >= 0:
-                        containsKeyWord = True
-                if containsKeyWord == False:
-                    imageObjArray.append(imageObject)
-                    imageCounter += 1
-                    if imageCounter == maxImages:
-                        break
+            images = imageWrapper.cssselect("img")
+            if len(images) > 0:
+                image = images[0] #Actual image object
+                captions = imageWrapper.cssselect(".thumbcaption")
+                if len(captions) > 0:
+                    caption = captions[0] #Holds the description
+                    description = formatString(caption.text_content())
+                else:
+                    description = "No description found"
+
+                imageObject = {}
+                src = image.attrib["src"][2:] #remove the first two characters of the URL because they are a filepaths for the server ('//'), not URL. Represent root.
+                imageObject["src"] = "https://" + src
+                imageObject["description"] = description
+                if len(description)>0: #Filters out non-ship related pictures
+                    #Filters out unwanted images such as "svgs"
+                    filterOutKeyWords = ['svg']
+                    containsKeyWord = False
+                    for keyword in filterOutKeyWords:
+                        if src.find(keyword) >= 0:
+                            containsKeyWord = True
+                    if containsKeyWord == False:
+                        imageObjArray.append(imageObject)
+                        imageCounter += 1
+                        if imageCounter == maxImages:
+                            break
     return imageObjArray
 def getInfoBoxPicture(infobox):
     """returns picture object"""
@@ -196,69 +204,85 @@ def createDateObject(dateString):
 
     return dateObject
 
-def processArmament(armamentElement):
+def processArmament(armamentElement, armamentString, arrayOfWords, armamentCalculateObjects):
+    """
+    armamentElement - the armament dom element
+    armamentString and arrayOfWords - Array of words from armament. Sent as parameter because it is already "calcualted" when checking to see if the armament is a date
+    armamentCalculateObject - A dictionary with a Calculate(.py) object for each type of armament. Used to calculate average, median, and related values for size and quantity. See processArmamentElements
+    """
     pictures = []
-    armamentString = formatString(armamentElement.text_content())
+
     armament = None
-    arrayOfWords = getArrayOfWords(armamentString, None, -1)
-    if(len(arrayOfWords) > 1): #if it equals 1, then it's a date (extraneous, not armament, date of gun configuration)
-        armamentLinks = armamentElement.cssselect('a')
-        armamentLink = None
+
+    armamentLinks = armamentElement.cssselect('a')
 
 
-        if len(armamentLinks) > 0:#Assumes the full name is contained within links if evaluates to true
-            linkWordsArray = [] #each 'word' is probably a phrase
-            linkCounter = 0
-            for link in armamentLinks:
-                linkWordsArray.append(formatString(link.text_content()))
-                #GETS IMAGES for armament. Uses the last armament link if there are more than one.
-                if linkCounter == len(armamentLinks) - 1:
-                    armamentPage = html.fromstring(requests.get(websiteRoot + link.attrib['href']).content)
-                    armamentContent = armamentPage.cssselect('#bodyContent')[0]
-                    pictures = getImages(armamentContent, numberOfImagesForSubItems)
-                linkCounter += 1
+    if len(armamentLinks) > 0:#Assumes the full name is contained within links if evaluates to true
+        linkWordsArray = [] #each 'word' is probably a phrase
+        linkCounter = 0
+        for link in armamentLinks:
+            linkWordsArray.append(formatString(link.text_content()))
+            #GETS IMAGES for armament. Uses the last armament link if there are more than one.
+            if linkCounter == len(armamentLinks) - 1:
+                armamentPage = html.fromstring(requests.get(websiteRoot + link.attrib['href']).content)
+                armamentContent = armamentPage.cssselect('#bodyContent')[0]
+                pictures = getImages(armamentContent, numberOfImagesForSubItems)
+            linkCounter += 1
 
-            armamentFullName = createStringFromArray(0, linkWordsArray)
-        else: #tries to get the name without the link if there are no links
-            arrayofWordsIncludingX = getArrayOfWords(armamentString, "x", -1)
-            armamentFullName = createStringFromArray(1, arrayofWordsIncludingX)
+        armamentFullName = createStringFromArray(0, linkWordsArray)
+    else: #tries to get the name without the link if there are no links
+        arrayofWordsIncludingX = getArrayOfWords(armamentString, "x", -1)
+        armamentFullName = createStringFromArray(1, arrayofWordsIncludingX)
 
-        quantity = parseIntFromStringArray(arrayOfWords, 0)
+    quantity = parseIntFromStringArray(arrayOfWords, 0)
 
 
-        charactersToRemove = ['(', ')']
-        armamentFullTextWithout = removeOddCharacters(armamentString, charactersToRemove) #not necessarily the full name
-        characterToSpace = ['/']
-        armamentFullTextWithout = replaceOddCharacters(armamentFullTextWithout, characterToSpace, ' ')
+    charactersToRemove = ['(', ')']
+    armamentFullTextWithout = removeOddCharacters(armamentString, charactersToRemove) #not necessarily the full name
+    characterToSpace = ['/']
+    armamentFullTextWithout = replaceOddCharacters(armamentFullTextWithout, characterToSpace, ' ')
 
-        unitsToTry = ["mm", "cm", "kg"] #Prioritizes the first in the array
-        size = None
-        unit = None
-        for unit in unitsToTry:
-            armamentSizeArray = getWordsBeforeUnit(armamentFullTextWithout, unit, 1)
-            if len(armamentSizeArray) == 1:
-                armamentSize = armamentSizeArray[0]
-                armamentUnit = unit
-                break #You want to prioritze the first unit
+    unitsToTry = ["mm", "cm", "kg"] #Prioritizes the first in the array
+    armamentSize = 0
+    armamentUnit = None
+    for unit in unitsToTry:
+        armamentSizeArray = getWordsBeforeUnit(armamentFullTextWithout, unit, 1)
+        if len(armamentSizeArray) == 1:
+            armamentSize = armamentSizeArray[0]
+            armamentUnit = unit
+            break #You want to prioritze the first unit
+    if armamentUnit is not None:
         armament = Armament(armamentFullName, quantity, armamentUnit, armamentSize)
-        if armament.isCannon:
-            armament #do nothing current
-        elif armament.isMissile:
-            armament #do nothing currently
-        elif armament.isTorpedo:
-            armament #do nothing currently
-        else: #Unit conversion for normal guns
-            newUnit = "mm"
-            newValue = conversionTable.convertUnit(armament.size, armament.unit, newUnit)
-            armament.unit = newUnit
-            armament.size = newValue
+    else:
+        armament = Armament(armamentFullName, quantity)
+    if  armament.unknown:
+        doNothing = None #currently do nothing
+    elif armament.isCannon:
+        calculateObjectsForType = armamentCalculateObjects["cannon"]
+        #calculateObjectsForType["size"].addValue(armamentSize)
+    elif armament.isMissile:
+        armament #do nothing currently
+    elif armament.isTorpedo: #Unit for torpedo guns and also deals with "calculate object"
+        newUnit = "mm"
+        newValue = conversionTable.convertUnit(armament.size, armament.unit, newUnit)
+        armament.unit = newUnit
+        armament.size = newValue
+    else: #Unit conversion for normal guns and also deals with "calculate object"
+        newUnit = "mm"
+        newValue = conversionTable.convertUnit(armament.size, armament.unit, newUnit)
+        armament.unit = newUnit
+        armament.size = newValue
 
-        armament = armament.toSerializableForm()
-        armament['pictures'] = pictures #Should really be set in the armament constructor. Pictures defined at the top of the function and assigned under certain conditions in the link if statement
+    armament = armament.toSerializableForm()
+    armament['pictures'] = pictures #Should really be set in the armament constructor. Pictures defined at the top of the function and assigned under certain conditions in the link if statement
 
     return armament
 
 def processArmor(armorElement, listTitleInput):
+    """
+    armorElement - the armor DOM element
+    listTitleInput - relevant to armor in sublists
+    """
 
     armor = None
     armorRange = False
@@ -351,7 +375,40 @@ def calculateComplement(valueString, ship):
 
     ship['complement'] = currentComplementValue
 
+def processArmamentElements(armamentElements, configurationToKeep):
+    valuesArray = []
+    configurationCounter = -1 #If multiple configurations, the first one will have a date at the top of it
+    armamentElementCounter = 0
+    oneConfiguration = False #If there is only one configuration, keep all armaments. The counter increments the configuration counter by one when it runs into its first null (a date) because if there are two configurations, both have a dates. 1st configuration is after the FIRST null except for when there is only ONE configuration (no dates, no nulls)
 
+
+    armamentCalculateObjects = {
+    }
+    typesOfArmament = ["normalGun", "torpedo", "cannon", "missile"]
+    #Essentially creates two calculate objects per armament type
+    for typeOfArmament in typesOfArmament:
+        calculateDictionaryForType = {
+            "size": Calculate([]),
+            "quantity": Calculate([])
+        }
+        armamentCalculateObjects[typeOfArmament] = calculateDictionaryForType
+
+
+    for arrayValueElement in armamentElements:
+        armamentFormattedString = formatString(arrayValueElement.text_content())
+        arrayOfWords = getArrayOfWords(armamentFormattedString, None, -1)
+        isDate = len(arrayOfWords) < 2
+        if isDate == False and armamentElementCounter == 0: #The first "value" is not a configuration year, so it must only have one configuration
+            oneConfiguration = True
+        if isDate:
+            configurationCounter += 1
+            if configurationCounter > configurationToKeep:
+                break
+        elif (configurationCounter == configurationToKeep) or (oneConfiguration):
+            armament = processArmament(arrayValueElement, armamentFormattedString, arrayOfWords, armamentCalculateObjects)
+            valuesArray.append(armament)
+        armamentElementCounter += 1
+    return valuesArray
 
 
 def categorizeElement(key, value, valueElement, ship): #Will categorize elements that are not already in "arrays." For example, commissioned, decomissioned, recomissioned, ... are all listed as separate elements in the highest level of table
@@ -392,7 +449,8 @@ def categorizeElement(key, value, valueElement, ship): #Will categorize elements
         ship["armor"] = []
     elif key == "armament":
         #There's only one gun
-        ship["armament"].append(processArmament(valueElement))
+        valuesArray = processArmamentElements([valueElement], 0)
+        ship["armament"] = valuesArray
     elif key == "complement":
         calculateComplement(value, ship)
     else:   #Catch all
@@ -413,24 +471,7 @@ def processRow(rowElement, shipBeingUpdated):
             addValuesArrayToShip = True
             if key == "armament":
                 configuration = int(shipBeingUpdated['configuration']) #Which configuration do you want if their are multiple configurations
-                configurationCounter = -1 #If multiple configurations, the first one will have a date at the top of it
-                armamentElementCounter = 0
-                oneConfiguration = False #If there is only one configuration, keep all armaments. The counter increments the configuration counter by one when it runs into its first null (a date) because if there are two configurations, both have a dates. 1st configuration is after the FIRST null except for when there is only ONE configuration (no dates, no nulls)
-
-                for arrayValueElement in arrayValueElements:
-                    value = processArmament(arrayValueElement)
-                    if value != None and armamentElementCounter == 0: #The first "value" is not a configuration year, so it must only have one configuration
-                        oneConfiguration = True
-                    elif value is None:
-                        configurationCounter += 1
-
-                    if configurationCounter > configuration:
-                        break
-                    elif (configurationCounter == configuration and value != None) or (oneConfiguration):
-                        valuesArray.append(value)
-
-                    armamentElementCounter += 1
-
+                valuesArray = processArmamentElements(arrayValueElements, configuration) #deals with processing armament elements
             elif key == "armor":
                 lastListTitle = None
                 for armorElement in arrayValueElements:

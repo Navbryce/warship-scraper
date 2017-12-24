@@ -12,7 +12,8 @@ class UnitConversionTable(object):
         self.conversionDictionary = {
             'mm': {
                 'cm': .1,
-                'in': .0393701
+                'in': .0393701,
+                'm': .001
             }
         }
 

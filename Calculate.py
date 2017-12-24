@@ -1,14 +1,18 @@
 import math
 class Calculate(object):
     sortedValues = []
+    sum = 0
     def __init__(self, arrayOfValues):
         self.sortedValues = arrayOfValues
         self.sortedValues.sort() #will also sort the values array being sent
+        for value in arrayOfValues:
+            self.sum += value
     def addValue(self, value):
         """Add a value to the array of values for calculations to be performed on"""
         minIndex = 0
         maxIndex = len(self.sortedValues)
         self.addValueBinary(value, minIndex, maxIndex)
+        self.sum += value
 
     def findMedian(self):
         median = None
@@ -22,6 +26,13 @@ class Calculate(object):
             middleIndex = math.floor(length / 2) #because odd and 0 is the first index, not one
             median = sortedValues[middleIndex]
         return median
+    def calculateAverage(self):
+        numberOfTerms = len(self.sortedValues)
+        if numberOfTerms > 0:
+            average = self.sum / numberOfTerms
+        else:
+            average = 0
+        return average
 
 
     def addValueBinary(self, value, minIndex, maxIndex):
@@ -48,11 +59,13 @@ class Calculate(object):
 
 
 
-
+"""
 values = [7, 2, 3, 1, 4, 5]
 calculateObject = Calculate(values)
 print("SORTED: ", calculateObject.sortedValues)
 print("Median", calculateObject.findMedian())
+print("Average", calculateObject.calculateAverage())
+
 print("Adding values...")
 
 calculateObject.addValue(8)
@@ -66,3 +79,5 @@ calculateObject.addValue(0)
 
 print("SORTED: ", calculateObject.sortedValues)
 print("Median", calculateObject.findMedian())
+print("Average", calculateObject.calculateAverage())
+"""

@@ -6,16 +6,24 @@ class Armament(object):
     isMissile = None
     isCannon = False
     isTorpedo = False
+    unknown = False
 
 
-    def __init__(self, fullName, numberOfBarrels, unit, size):
+    def __init__(self, fullName, numberOfBarrels, unit = None, size = None):
         self.fullName = fullName
         self.numberOfBarrels = numberOfBarrels
-        self.unit = unit
-        self.size = size
         self.isMissile = self.isMissileCheck()
-        self.isTorpedo = self.isTorpedoCheck()
-        self.isCannon = self.isCannonCheck()
+
+        if unit is not None:
+            self.unit = unit
+            self.size = size
+            self.isTorpedo = self.isTorpedoCheck()
+            self.isCannon = self.isCannonCheck()
+        elif self.isMissile:
+            self.size = 0 #For some reason it couldn't find the missile size (they're not always listed. I will need to create a scraper to scrape the missile's page)
+            self.unit = "mm"
+        else:
+            self.unknown = True
 
     def isMissileCheck(self):
         isMissile = False
@@ -56,7 +64,7 @@ class Armament(object):
         armament = {'fullName': self.fullName,
                     'quantity': int(self.numberOfBarrels),
                     }
-        if self.size != None:
+        if self.unknown is False: #unknown is true when no unit was sent and it's not a missile
             armament['size'] = float(self.size)
             armament['unit'] = self.unit
             armament['isCannon'] = self.isCannon
