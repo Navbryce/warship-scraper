@@ -1,24 +1,65 @@
 import math
 class Calculate(object):
     sortedValues = []
+    frequencies = {}
+    currentMode = None
     sum = 0
     def __init__(self, arrayOfValues):
         self.sortedValues = arrayOfValues
         self.sortedValues.sort() #will also sort the values array being sent
         for value in arrayOfValues:
             self.sum += value
+            self.addFrequency(value)
+
+
+    #ACCOUNT FOR QUANTITY
     def addValue(self, value):
         """Add a value to the array of values for calculations to be performed on"""
+        value = float(value)
+
         minIndex = 0
         maxIndex = len(self.sortedValues)
         self.addValueBinary(value, minIndex, maxIndex)
         self.sum += value
+        self.addFrequency(value)
+
+    def addValueWithQuantity(self, value, n):
+        """Will add the value n times"""
+        value = float(value)
+        n = int(n)
+        while n > 0:
+            self.addValue(value)
+            n -= 1
+
+    def addFrequency(self, value):
+        """Increments frequency for value. Also checks to see if it is the new mode. Should never be called outside of this object. Not public"""
+        #Deal with frequences (for mode)
+        if value in self.frequencies:
+            currentFrequency = self.frequencies[value]
+        else:
+            currentFrequency = 0
+        self.frequencies[value] = currentFrequency + 1
+        if self.currentMode == None or self.frequencies[value] > self.frequencies[self.currentMode]: #Checks to see if there is a new mode
+            self.currentMode = value
+
+    def findMode(self):
+        """Finds the mode using the frequencies dictionary.
+        and the currentMode private variable"""
+        if self.currentMode is None:
+            return -1
+        else:
+            return {
+                "value": self.currentMode,
+                "frequency": self.frequencies[self.currentMode]
+            }
 
     def findMedian(self):
         median = None
         sortedValues = self.sortedValues
         length = len(sortedValues)
-        if length % 2 == 0: #there is no middle value because the list size is even. average the two middle elements
+        if length == 0:
+            median = -1
+        elif length % 2 == 0: #there is no middle value because the list size is even. average the two middle elements
             upperMiddleIndex = int(length / 2)
             sumOfMiddleElements =  sortedValues[upperMiddleIndex - 1] + sortedValues[upperMiddleIndex]
             median = sumOfMiddleElements / 2
@@ -41,8 +82,10 @@ class Calculate(object):
            Uses binary search
         """
         middleIndex = minIndex + math.ceil((maxIndex - minIndex) / 2)
-        if minIndex == maxIndex:
-            if middleIndex == len(self.sortedValues) or self.sortedValues[middleIndex] > value: #if it equals the length, then don't check to see if another element is at that index
+        if minIndex == maxIndex or middleIndex >= len(self.sortedValues):
+            if middleIndex >= len(self.sortedValues):
+                self.sortedValues.append(value)
+            elif self.sortedValues[middleIndex] > value: #if it equals the length, then don't check to see if another element is at that index
                 self.sortedValues.insert(middleIndex, value) #insert pushes the current value at that index up an index
             else:
                 self.sortedValues.insert(middleIndex + 1, value)
@@ -56,6 +99,15 @@ class Calculate(object):
 
             self.addValueBinary(value, minIndex, maxIndex)
 
+    def calculationsDictionary(self):
+        #Will return a dictionary with the mode, median, and average
+
+        return {
+            "mode": self.findMode(),
+            "median": self.findMedian(),
+            "average": self.calculateAverage()
+        }
+
 
 
 
@@ -64,6 +116,7 @@ values = [7, 2, 3, 1, 4, 5]
 calculateObject = Calculate(values)
 print("SORTED: ", calculateObject.sortedValues)
 print("Median", calculateObject.findMedian())
+print("Mode", calculateObject.findMode())
 print("Average", calculateObject.calculateAverage())
 
 print("Adding values...")
@@ -77,7 +130,18 @@ calculateObject.addValue(-1)
 calculateObject.addValue(0)
 
 
+
 print("SORTED: ", calculateObject.sortedValues)
 print("Median", calculateObject.findMedian())
+print("Mode", calculateObject.findMode())
+print("Average", calculateObject.calculateAverage())
+
+calculateObject.addValueWithQuantity(8, 5)
+
+
+
+print("SORTED: ", calculateObject.sortedValues)
+print("Median", calculateObject.findMedian())
+print("Mode", calculateObject.findMode())
 print("Average", calculateObject.calculateAverage())
 """

@@ -258,20 +258,32 @@ def processArmament(armamentElement, armamentString, arrayOfWords, armamentCalcu
     if  armament.unknown:
         doNothing = None #currently do nothing
     elif armament.isCannon:
+        #After unit conversions
         calculateObjectsForType = armamentCalculateObjects["cannon"]
-        #calculateObjectsForType["size"].addValue(armamentSize)
+        calculateObjectsForType["size"].addValueWithQuantity(armament.size, armament.numberOfBarrels)
     elif armament.isMissile:
-        armament #do nothing currently
+        #After unit conversions
+        calculateObjectsForType = armamentCalculateObjects["missile"]
+        calculateObjectsForType["size"].addValueWithQuantity(armament.size, armament.numberOfBarrels)
     elif armament.isTorpedo: #Unit for torpedo guns and also deals with "calculate object"
         newUnit = "mm"
         newValue = conversionTable.convertUnit(armament.size, armament.unit, newUnit)
         armament.unit = newUnit
         armament.size = newValue
+
+        #After unit conversions
+        calculateObjectsForType = armamentCalculateObjects["torpedo"]
+        calculateObjectsForType["size"].addValueWithQuantity(armament.size, armament.numberOfBarrels)
+
     else: #Unit conversion for normal guns and also deals with "calculate object"
         newUnit = "mm"
         newValue = conversionTable.convertUnit(armament.size, armament.unit, newUnit)
         armament.unit = newUnit
         armament.size = newValue
+
+        #After unit conversions
+        calculateObjectsForType = armamentCalculateObjects["missile"]
+        calculateObjectsForType["size"].addValueWithQuantity(armament.size, armament.numberOfBarrels)
 
     armament = armament.toSerializableForm()
     armament['pictures'] = pictures #Should really be set in the armament constructor. Pictures defined at the top of the function and assigned under certain conditions in the link if statement
@@ -385,11 +397,11 @@ def processArmamentElements(armamentElements, configurationToKeep):
     armamentCalculateObjects = {
     }
     typesOfArmament = ["normalGun", "torpedo", "cannon", "missile"]
-    #Essentially creates two calculate objects per armament type
+
+    #Essentially creates one calculate objects per armament type. Sent as a parameter to processArmament
     for typeOfArmament in typesOfArmament:
         calculateDictionaryForType = {
             "size": Calculate([]),
-            "quantity": Calculate([])
         }
         armamentCalculateObjects[typeOfArmament] = calculateDictionaryForType
 
@@ -408,7 +420,17 @@ def processArmamentElements(armamentElements, configurationToKeep):
             armament = processArmament(arrayValueElement, armamentFormattedString, arrayOfWords, armamentCalculateObjects)
             valuesArray.append(armament)
         armamentElementCounter += 1
-    return valuesArray
+
+    #Get a serializable dictionary that contains each armament type's Calculate Object in the form of a dictionary
+    for armamentType in typesOfArmament:
+        armamentCalculateObjects[armamentType] = armamentCalculateObjects[armamentType]["size"].calculationsDictionary()
+
+    armamentsDictionary = {
+        "armaments": valuesArray,
+        "calculations": armamentCalculateObjects
+    }
+    return armamentsDictionary
+
 
 
 def categorizeElement(key, value, valueElement, ship): #Will categorize elements that are not already in "arrays." For example, commissioned, decomissioned, recomissioned, ... are all listed as separate elements in the highest level of table
