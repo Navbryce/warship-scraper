@@ -63,6 +63,7 @@ class Armament(object):
     def toSerializableForm(self):
         armament = {'fullName': self.fullName,
                     'quantity': int(self.numberOfBarrels),
+                    'unknown': self.unknown
                     }
         if self.unknown is False: #unknown is true when no unit was sent and it's not a missile
             armament['size'] = float(self.size)
@@ -70,4 +71,5 @@ class Armament(object):
             armament['isCannon'] = self.isCannon
             armament['isTorpedo'] = self.isTorpedo
             armament['isMissile'] = self.isMissile
+        
         return armament

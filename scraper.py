@@ -204,11 +204,11 @@ def createDateObject(dateString):
 
     return dateObject
 
-def processArmament(armamentElement, armamentString, arrayOfWords, armamentCalculateObjects):
+def processArmament(armamentElement, armamentString, arrayOfWords, armamentTypeObjects):
     """
     armamentElement - the armament dom element
     armamentString and arrayOfWords - Array of words from armament. Sent as parameter because it is already "calcualted" when checking to see if the armament is a date
-    armamentCalculateObject - A dictionary with a Calculate(.py) object for each type of armament. Used to calculate average, median, and related values for size and quantity. See processArmamentElements
+    armamentTypeObject - A dictionary with a Calculate(.py) object for each type of armament. Used to calculate average, median, and related values for size and quantity. See processArmamentElements
     """
     pictures = []
 
@@ -255,38 +255,54 @@ def processArmament(armamentElement, armamentString, arrayOfWords, armamentCalcu
         armament = Armament(armamentFullName, quantity, armamentUnit, armamentSize)
     else:
         armament = Armament(armamentFullName, quantity)
-    if  armament.unknown:
-        doNothing = None #currently do nothing
-    elif armament.isCannon:
-        #After unit conversions
-        calculateObjectsForType = armamentCalculateObjects["cannon"]
-        calculateObjectsForType["size"].addValueWithQuantity(armament.size, armament.numberOfBarrels)
-    elif armament.isMissile:
-        #After unit conversions
-        calculateObjectsForType = armamentCalculateObjects["missile"]
-        calculateObjectsForType["size"].addValueWithQuantity(armament.size, armament.numberOfBarrels)
-    elif armament.isTorpedo: #Unit for torpedo guns and also deals with "calculate object"
-        newUnit = "mm"
-        newValue = conversionTable.convertUnit(armament.size, armament.unit, newUnit)
-        armament.unit = newUnit
-        armament.size = newValue
 
-        #After unit conversions
-        calculateObjectsForType = armamentCalculateObjects["torpedo"]
-        calculateObjectsForType["size"].addValueWithQuantity(armament.size, armament.numberOfBarrels)
-
-    else: #Unit conversion for normal guns and also deals with "calculate object"
-        newUnit = "mm"
-        newValue = conversionTable.convertUnit(armament.size, armament.unit, newUnit)
-        armament.unit = newUnit
-        armament.size = newValue
-
-        #After unit conversions
-        calculateObjectsForType = armamentCalculateObjects["missile"]
-        calculateObjectsForType["size"].addValueWithQuantity(armament.size, armament.numberOfBarrels)
 
     armament = armament.toSerializableForm()
     armament['pictures'] = pictures #Should really be set in the armament constructor. Pictures defined at the top of the function and assigned under certain conditions in the link if statement
+
+    #Armament is now a dictionary not an object
+    if  armament["unknown"]:
+        doNothing = None #currently do nothing
+    elif armament["isCannon"]:
+        #After unit conversions
+        calculateObjectsForType = armamentTypeObjects["cannon"]
+        calculateObjectsForType["size"].addValueWithQuantity(armament["size"], armament["quantity"])
+        calculateObjectsForType["armaments"].append(armament)    #Add it to it's appropriate category
+
+
+    elif armament["isMissile"]:
+        #After unit conversions
+        calculateObjectsForType = armamentTypeObjects["missile"]
+        calculateObjectsForType["size"].addValueWithQuantity(armament["size"], armament["quantity"])
+        calculateObjectsForType["armaments"].append(armament)    #Add it to it's appropriate category
+
+    elif armament["isTorpedo"]: #Unit for torpedo guns and also deals with "calculate object"
+        newUnit = "mm"
+        newValue = conversionTable.convertUnit(armament["size"], armament["unit"], newUnit)
+        armament["unit"] = newUnit
+        armament["size"] = newValue
+
+        #After unit conversions
+        calculateObjectsForType = armamentTypeObjects["torpedo"]
+        calculateObjectsForType["size"].addValueWithQuantity(armament["size"], armament["quantity"])
+
+        calculateObjectsForType["armaments"].append(armament)    #Add it to it's appropriate category
+
+
+    else: #Unit conversion for normal guns and also deals with "calculate object"
+        newUnit = "mm"
+        newValue = conversionTable.convertUnit(armament["size"], armament["unit"], newUnit)
+        armament["unit"] = newUnit
+        armament["size"] = newValue
+
+        #After unit conversions
+        calculateObjectsForType = armamentTypeObjects["missile"]
+        calculateObjectsForType["size"].addValueWithQuantity(armament["size"], armament["quantity"])
+
+        calculateObjectsForType["armaments"].append(armament)    #Add it to it's appropriate category
+
+
+
 
     return armament
 
@@ -321,9 +337,16 @@ def processArmor(armorElement, listTitleInput):
                         armorRange = True
                         armorMaxValue = armorWidthArray[0] #0 is the first word before the unit
                         armorMinValue = armorWidthArray[2] #2 is the third word after the unit
-                    else:
-                        armorMaxValue = armorWidthArray[0]
+                    elif armorWidthArray[0].find("-") >= 0:
+                        armorRange = True
+                        armorRangeValues = armorWidthArray[0] #The armor is a range. The first word before the unit has a dash in it (presumbably A-B where A and B are some constant)
+                        dashIndex = armorRangeValues.find("-")
+                        armorMinValue = armorRangeValues[0:dashIndex]
+                        armorMaxValue = armorRangeValues[dashIndex + 1:]
+                    else: #Not a range of values
                         armorMinValue = armorWidthArray[0]
+                        armorMaxValue = armorMinValue
+
                     if listTitleInput != None and len(armorElement.cssselect("a")) == 0: #you can identify a sub list item by its LACK of a link
                         armorType = listTitleInput + " " + armorType #previousArmorType is the title of the list such as "Deck" in "Deck": "First", "Second"
 
@@ -388,22 +411,24 @@ def calculateComplement(valueString, ship):
     ship['complement'] = currentComplementValue
 
 def processArmamentElements(armamentElements, configurationToKeep):
-    valuesArray = []
+    values = []
     configurationCounter = -1 #If multiple configurations, the first one will have a date at the top of it
     armamentElementCounter = 0
     oneConfiguration = False #If there is only one configuration, keep all armaments. The counter increments the configuration counter by one when it runs into its first null (a date) because if there are two configurations, both have a dates. 1st configuration is after the FIRST null except for when there is only ONE configuration (no dates, no nulls)
 
-
-    armamentCalculateObjects = {
+    #4 keys. All 4 types of armaments. Each key stores an array of armaments and its calculate object
+    armamentTypeObjects = {
     }
+
     typesOfArmament = ["normalGun", "torpedo", "cannon", "missile"]
 
     #Essentially creates one calculate objects per armament type. Sent as a parameter to processArmament
     for typeOfArmament in typesOfArmament:
         calculateDictionaryForType = {
             "size": Calculate([]),
+            "armaments": []
         }
-        armamentCalculateObjects[typeOfArmament] = calculateDictionaryForType
+        armamentTypeObjects[typeOfArmament] = calculateDictionaryForType
 
 
     for arrayValueElement in armamentElements:
@@ -417,19 +442,18 @@ def processArmamentElements(armamentElements, configurationToKeep):
             if configurationCounter > configurationToKeep:
                 break
         elif (configurationCounter == configurationToKeep) or (oneConfiguration):
-            armament = processArmament(arrayValueElement, armamentFormattedString, arrayOfWords, armamentCalculateObjects)
-            valuesArray.append(armament)
+            armament = processArmament(arrayValueElement, armamentFormattedString, arrayOfWords, armamentTypeObjects)
+            values.append(armament)
         armamentElementCounter += 1
 
     #Get a serializable dictionary that contains each armament type's Calculate Object in the form of a dictionary
     for armamentType in typesOfArmament:
-        armamentCalculateObjects[armamentType] = armamentCalculateObjects[armamentType]["size"].calculationsDictionary()
+        armamentTypeObject = armamentTypeObjects[armamentType]
+        armamentTypeObject["size"] = armamentTypeObject["size"].calculationsDictionary() #Serializes the calculate object for size
+        armamentTypeObject["armaments"] = armamentTypeObject["armaments"]
 
-    armamentsDictionary = {
-        "armaments": valuesArray,
-        "calculations": armamentCalculateObjects
-    }
-    return armamentsDictionary
+
+    return armamentTypeObjects
 
 
 
@@ -468,11 +492,13 @@ def categorizeElement(key, value, valueElement, ship): #Will categorize elements
         processClassAndType(value, ship)
     elif key == "armor" or key == "armour":
         #There's only a single unit of armor AKA there must be none because the key is "armor" meaning there is no type key
-        ship["armor"] = []
+        ship["armor"] = {"armamentObjects": [],
+                         "calculations": {}
+                        }
     elif key == "armament":
         #There's only one gun
-        valuesArray = processArmamentElements([valueElement], 0)
-        ship["armament"] = valuesArray
+        values = processArmamentElements([valueElement], 0)
+        ship["armament"] = values
     elif key == "complement":
         calculateComplement(value, ship)
     else:   #Catch all
@@ -489,19 +515,30 @@ def processRow(rowElement, shipBeingUpdated):
         else :
             keysWithNoArray = ["draught", "length", "displacement"] #Should contain the keys that should NOT have an array of objects. For example, some ships have multiple displacements listed--scraper should only keep one
 
-            valuesArray = []
-            addValuesArrayToShip = True
+            values = []
+            addvaluesToShip = True
             if key == "armament":
                 configuration = int(shipBeingUpdated['configuration']) #Which configuration do you want if their are multiple configurations
-                valuesArray = processArmamentElements(arrayValueElements, configuration) #deals with processing armament elements
+                values = processArmamentElements(arrayValueElements, configuration) #deals with processing armament elements
             elif key == "armor":
+                values = {"armamentObjects": [],
+                         "calculations": {}
+                }
                 lastListTitle = None
+                armorCalculateObject = Calculate([])
                 for armorElement in arrayValueElements:
                     armor = processArmor(armorElement, lastListTitle)
                     if armor != None and 'listTitle' in armor:
                         lastListTitle = armor["listTitle"]
                     elif armor != None:
-                        valuesArray.append(armor)
+                        values["armamentObjects"].append(armor)
+
+                        #Add armor width to Calculate object. NOTE: This does not account for weights (weighted values) of armor AKA if 5 mm exists at only 1% of the ship, it is treated the same as 1000mm of armor that exists for 99% of the ship.
+                        armorCalculateObject.addValue(armor["minValue"])
+                        if(armor["range"]):
+                            armorCalculateObject.addValue(armor["maxValue"])
+                values["calculations"] = armorCalculateObject.calculationsDictionary()
+
 
             elif key == "installed power": #Some ships just have the installed power value listed. Some have a list of items under installed power including the value, boilers, ... This will just keep the actual value
                 for powerElement in arrayValueElements:
@@ -509,32 +546,32 @@ def processRow(rowElement, shipBeingUpdated):
                     processedValue = processStandardValue(value)
                     if processedValue != value: #a dictionary was returned meaning it found a unit (kW)
                         ship[key] = processedValue
-                        addValuesArrayToShip = False
+                        addvaluesToShip = False
                         break #exits the for loop
             elif key == "complement":
                 for complementElement in arrayValueElements:
                     valueString = formatString(complementElement.text_content())
                     categorizeElement(key, valueString, complementElement, ship) #See how categorize elemtn categorizes complement. It will sum the values of all complement elements
-                addValuesArrayToShip = False
+                addvaluesToShip = False
             else:
                 #If the property should not have an array of objects, it will only save the LAST value not an array of values
                 for noArrayKey in keysWithNoArray: #keysWithNoArray defined at top
                     if key == noArrayKey:
                         lastValueElement = arrayValueElements[len(arrayValueElements) - 1] #Will only save the last value
                         categorizeElement(key, formatString(lastValueElement.text_content()), lastValueElement, ship)
-                        addValuesArrayToShip = False
+                        addvaluesToShip = False
                         break
 
-                if addValuesArrayToShip:
+                if addvaluesToShip:
                     for arrayValueElement in arrayValueElements:
                         value = processStandardValue(formatString(arrayValueElement.text_content()))
-                        valuesArray.append(value)
+                        values.append(value)
 
             if key.lower().find("awards") >= 0: #Sometimes awards are listed as a list. Sometimes they are just a single value. categorizeElement makes the awards key "awards". This converts "honors and awards" to "awards" as the key
                 key = "awards"
 
-            if addValuesArrayToShip:
-                shipBeingUpdated[key] = valuesArray
+            if addvaluesToShip:
+                shipBeingUpdated[key] = values
     return shipBeingUpdated
 
 
