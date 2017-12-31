@@ -177,6 +177,32 @@ def getImages(pageElement, maxImages): #Page element = DOM element that is a par
                         if imageCounter == maxImages:
                             break
     return imageObjArray
+def formatShipName(shipName):
+    """Formats a ship name if one is not provided in the scraper parameters"""
+    wordsToFilter = ["HMS", "USS", "Battleship", "German", "IJN", "("]
+
+    shipWords = getArrayOfWords(shipName, None, -1)
+    if len(shipWords) > 1: #Some ship names might be more than one word. This just filters out the names that are already fine
+        counter = 0
+        while counter < len(shipWords):
+            word = shipWords[counter]
+
+            removeWord = False
+
+
+            for filterWord in wordsToFilter:
+                if word.find(filterWord) >= 0:
+                    removeWord = True
+                    break
+            if removeWord:
+                shipWords.pop(counter) #Don't increment counter because everything has been shifted down one
+            else:
+                counter += 1
+
+        shipName = createStringFromArray(0, shipWords)
+    return shipName
+
+
 def getInfoBoxPicture(infobox):
     """returns picture object"""
     picture = infobox.cssselect("img")[0]
@@ -620,9 +646,17 @@ for page in shipPages:
     description = removeOddCharacters(description, oddCharactersInDescription)
     #Scrapes ship name
     shipName = tree.cssselect("#firstHeading")[0].text_content()
+
+    if 'displayName' not in page: #displayName is the name that will be displayed on the website. a display name was not provided
+        displayName = formatShipName(shipName)
+    else:
+        displayName = page['displayName']
+
     ship = {'ID': shipIDCounter,
             'scrapeURL': page['url'], #used to check uniqueness of ship AKA has it already been added. Note: I could check name and date (some ships have the same name), but I only need to do 1 comparison with URL
             'configuration': page['configuration'],
+            'displayName': displayName,
+            'name': shipName,
             'importantDates': [],
             'awards': [],
             'armament': [],
