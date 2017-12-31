@@ -142,6 +142,32 @@ def getArrayOfWords(haystack, needle, numberOfWords): #number of words including
             position = positionOfNextSpace + 1
     return words
 
+def deleteAnnotations(string):
+    """deletes in-line annotations found on pages. For example, "[1]"""
+    stringBeingChecked = string
+    formattedString = ""
+
+    openBracket = stringBeingChecked.find("[")
+    closeBracket = stringBeingChecked.find("]")
+    while openBracket >= 0 and closeBracket >= 0:
+        if openBracket + 2 == closeBracket: #traditional annotation
+            formattedString = formattedString + stringBeingChecked[0:openBracket]
+            stringBeingChecked = stringBeingChecked[closeBracket + 1:]
+
+        elif closeBracket > openBracket: #crop the string to relevant areas. the brackets found were not in normal annotation format
+            formattedString = formattedString + stringBeingChecked[0:closeBracket + 1]
+            stringBeingChecked = stringBeingChecked[closeBracket + 1:]
+        else: #crop the string to relevant areas. the brackets found were not in normal annotation format
+            formattedString = formattedString + stringBeingChecked[0:openBracket + 1]
+            stringBeingChecked = stringBeingChecked[openBracket + 1:]
+
+        #Update variables for loop
+        openBracket = stringBeingChecked.find("[")
+        closeBracket = stringBeingChecked.find("]")
+    #when the loop exists there are no more brackets, so the "stringBeingChecked" must be formatted
+    formattedString = formattedString + stringBeingChecked
+    return formattedString
+
 def getImages(pageElement, maxImages): #Page element = DOM element that is a parent (direct or indirect) of the pictures
     #Scrapes all images and descriptions
     imageObjArray = []
@@ -348,6 +374,8 @@ def processArmor(armorElement, listTitleInput):
     listTitle = None
 
     armorFormattedText = formatString(replaceColonWithSpace((armorElement.text_content()))) #replace colon with space because some pages have errors where there is no space after the colon
+    armorFormattedText = deleteAnnotations(armorFormattedText)
+
     arrayOfWords = getArrayOfWords(armorFormattedText, None, 10)
     if len(arrayOfWords) >= 1:
         armorType = arrayOfWords[0]
@@ -519,7 +547,7 @@ def categorizeElement(key, value, valueElement, ship): #Will categorize elements
         processClassAndType(value, ship)
     elif key == "armor" or key == "armour":
         #There's only a single unit of armor AKA there must be none because the key is "armor" meaning there is no type key
-        ship["armor"] = {"armamentObjects": [],
+        ship["armor"] = {"armorObjects": [],
                          "calculations": {}
                         }
     elif key == "armament":
@@ -548,7 +576,7 @@ def processRow(rowElement, shipBeingUpdated):
                 configuration = int(shipBeingUpdated['configuration']) #Which configuration do you want if their are multiple configurations
                 values = processArmamentElements(arrayValueElements, configuration) #deals with processing armament elements
             elif key == "armor":
-                values = {"armamentObjects": [],
+                values = {"armorObjects": [],
                          "calculations": {}
                 }
                 lastListTitle = None
@@ -558,7 +586,7 @@ def processRow(rowElement, shipBeingUpdated):
                     if armor != None and 'listTitle' in armor:
                         lastListTitle = armor["listTitle"]
                     elif armor != None:
-                        values["armamentObjects"].append(armor)
+                        values["armorObjects"].append(armor)
 
                         #Add armor width to Calculate object. NOTE: This does not account for weights (weighted values) of armor AKA if 5 mm exists at only 1% of the ship, it is treated the same as 1000mm of armor that exists for 99% of the ship.
                         armorCalculateObject.addValue(armor["minValue"])
@@ -684,4 +712,4 @@ for page in shipPages:
     #Appends the ship to the list of ships
     ships.append(ship)
     shipIDCounter+=1
-print(json.dumps(ships))
+#print(json.dumps(ships))

@@ -5,6 +5,10 @@ class Calculate(object):
     currentMode = None
     sum = 0
     def __init__(self, arrayOfValues):
+        self.frequencies = {}
+        self.currentMode = None
+        self.sum = 0
+
         self.sortedValues = arrayOfValues
         self.sortedValues.sort() #will also sort the values array being sent
         for value in arrayOfValues:
@@ -18,10 +22,11 @@ class Calculate(object):
         value = float(value)
 
         minIndex = 0
-        maxIndex = len(self.sortedValues)
+        maxIndex = len(self.sortedValues) - 1
         self.addValueBinary(value, minIndex, maxIndex)
         self.sum += value
         self.addFrequency(value)
+
 
     def addValueWithQuantity(self, value, n):
         """Will add the value n times"""
@@ -103,8 +108,9 @@ class Calculate(object):
 
     def calculationsDictionary(self):
         #Will return a dictionary with the mode, median, and average
+        print(self.sortedValues)
         if len(self.sortedValues) > 0:
-            return {
+            objectToReturn = {
                 "noValues": False,
                 "mode": self.findMode(),
                 "median": self.findMedian(),
@@ -112,10 +118,12 @@ class Calculate(object):
                 "minValue": self.getMinValue(),
                 "maxValue": self.getMaxValue()
             }
+            print(objectToReturn)
         else:
-            return { #Easier to have a boolean than an empty object for the GUI
+            objectToReturn =  { #Easier to have a boolean than an empty object for the GUI
                 "noValues": True
             }
+        return objectToReturn
 
 
 
