@@ -74,8 +74,10 @@ class Calculate(object):
         else:
             average = 0
         return average
-
-
+    def getMinValue(self):
+        return self.sortedValues[0]
+    def getMaxValue(self):
+        return self.sortedValues[len(self.sortedValues) - 1]
     def addValueBinary(self, value, minIndex, maxIndex):
         """Used to add a value to the sorted array
            Length should be an int
@@ -101,12 +103,19 @@ class Calculate(object):
 
     def calculationsDictionary(self):
         #Will return a dictionary with the mode, median, and average
-
-        return {
-            "mode": self.findMode(),
-            "median": self.findMedian(),
-            "average": self.calculateAverage()
-        }
+        if len(self.sortedValues) > 0:
+            return {
+                "noValues": False,
+                "mode": self.findMode(),
+                "median": self.findMedian(),
+                "average": self.calculateAverage(),
+                "minValue": self.getMinValue(),
+                "maxValue": self.getMaxValue()
+            }
+        else:
+            return { #Easier to have a boolean than an empty object for the GUI
+                "noValues": True
+            }
 
 
 

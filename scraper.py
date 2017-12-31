@@ -266,14 +266,14 @@ def processArmament(armamentElement, armamentString, arrayOfWords, armamentTypeO
     elif armament["isCannon"]:
         #After unit conversions
         calculateObjectsForType = armamentTypeObjects["cannon"]
-        calculateObjectsForType["size"].addValueWithQuantity(armament["size"], armament["quantity"])
+        calculateObjectsForType["sizeCalculate"].addValueWithQuantity(armament["size"], armament["quantity"])
         calculateObjectsForType["armaments"].append(armament)    #Add it to it's appropriate category
 
 
     elif armament["isMissile"]:
         #After unit conversions
         calculateObjectsForType = armamentTypeObjects["missile"]
-        calculateObjectsForType["size"].addValueWithQuantity(armament["size"], armament["quantity"])
+        calculateObjectsForType["sizeCalculate"].addValueWithQuantity(armament["size"], armament["quantity"])
         calculateObjectsForType["armaments"].append(armament)    #Add it to it's appropriate category
 
     elif armament["isTorpedo"]: #Unit for torpedo guns and also deals with "calculate object"
@@ -284,7 +284,7 @@ def processArmament(armamentElement, armamentString, arrayOfWords, armamentTypeO
 
         #After unit conversions
         calculateObjectsForType = armamentTypeObjects["torpedo"]
-        calculateObjectsForType["size"].addValueWithQuantity(armament["size"], armament["quantity"])
+        calculateObjectsForType["sizeCalculate"].addValueWithQuantity(armament["size"], armament["quantity"])
 
         calculateObjectsForType["armaments"].append(armament)    #Add it to it's appropriate category
 
@@ -296,8 +296,8 @@ def processArmament(armamentElement, armamentString, arrayOfWords, armamentTypeO
         armament["size"] = newValue
 
         #After unit conversions
-        calculateObjectsForType = armamentTypeObjects["missile"]
-        calculateObjectsForType["size"].addValueWithQuantity(armament["size"], armament["quantity"])
+        calculateObjectsForType = armamentTypeObjects["normalGun"]
+        calculateObjectsForType["sizeCalculate"].addValueWithQuantity(armament["size"], armament["quantity"])
 
         calculateObjectsForType["armaments"].append(armament)    #Add it to it's appropriate category
 
@@ -425,7 +425,7 @@ def processArmamentElements(armamentElements, configurationToKeep):
     #Essentially creates one calculate objects per armament type. Sent as a parameter to processArmament
     for typeOfArmament in typesOfArmament:
         calculateDictionaryForType = {
-            "size": Calculate([]),
+            "sizeCalculate": Calculate([]),
             "armaments": []
         }
         armamentTypeObjects[typeOfArmament] = calculateDictionaryForType
@@ -449,7 +449,7 @@ def processArmamentElements(armamentElements, configurationToKeep):
     #Get a serializable dictionary that contains each armament type's Calculate Object in the form of a dictionary
     for armamentType in typesOfArmament:
         armamentTypeObject = armamentTypeObjects[armamentType]
-        armamentTypeObject["size"] = armamentTypeObject["size"].calculationsDictionary() #Serializes the calculate object for size
+        armamentTypeObject["sizeCalculate"] = armamentTypeObject["sizeCalculate"].calculationsDictionary() #Serializes the calculate object for size
         armamentTypeObject["armaments"] = armamentTypeObject["armaments"]
 
 
