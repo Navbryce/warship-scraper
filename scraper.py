@@ -668,7 +668,8 @@ for page in shipPages:
     tree = html.fromstring(webpage.content)
     infoBox = tree.cssselect(".infobox")[0]
     content = tree.cssselect("#bodyContent")[0]
-    firstParagraph = content.cssselect("#mw-content-text>p")[0]
+    textContent = tree.cssselect("#mw-content-text")[0]
+    firstParagraph = content.cssselect(".mw-parser-output > p")[0]
     description = formatString(firstParagraph.text_content())
     oddCharactersInDescription = ["[a]"]
     description = removeOddCharacters(description, oddCharactersInDescription)
