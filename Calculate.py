@@ -108,7 +108,6 @@ class Calculate(object):
 
     def calculationsDictionary(self):
         #Will return a dictionary with the mode, median, and average
-        print(self.sortedValues)
         if len(self.sortedValues) > 0:
             objectToReturn = {
                 "noValues": False,
@@ -118,7 +117,6 @@ class Calculate(object):
                 "minValue": self.getMinValue(),
                 "maxValue": self.getMaxValue()
             }
-            print(objectToReturn)
         else:
             objectToReturn =  { #Easier to have a boolean than an empty object for the GUI
                 "noValues": True
