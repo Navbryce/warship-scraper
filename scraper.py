@@ -5,6 +5,7 @@ from lxml import html
 from Date import Date
 from UnitConversionTable import UnitConversionTable
 from Calculate import Calculate
+from ABoatDatabase import BoatDatabase
 from unidecode import unidecode
 import requests
 import sys
@@ -650,14 +651,16 @@ with open(inputPath, 'r') as file:
 shipPages = shipsInput
 
 websiteRoot = ingestSettings["websiteRoot"]
-
+databaseIp = ingestSettings["dbIp"]
+databasePort = int(ingestSettings["dbPort"])
 maxNumberOfImagesForAShip = ingestSettings["maxNumberOfImagesForAShip"]
 numberOfImagesForSubItems = ingestSettings["numberOfImagesForSubsItems"]
 
 
 # BEGINS SCRAPING
+boatDatabase = BoatDatabase(databaseIp, databasePort)
 conversionTable = UnitConversionTable()
-shipIDCounter = 0
+shipCounter = 0
 ships = []
 
 for page in shipPages:
@@ -681,7 +684,7 @@ for page in shipPages:
     else:
         displayName = page['displayName']
 
-    ship = {'ID': shipIDCounter,
+    ship = {
             'scrapeURL': page['url'], #used to check uniqueness of ship AKA has it already been added. Note: I could check name and date (some ships have the same name), but I only need to do 1 comparison with URL
             'configuration': page['configuration'],
             'displayName': displayName,
@@ -705,11 +708,12 @@ for page in shipPages:
     for row in rows:
         processRow(row, ship)
 
+    #All Information Scraped. Save information
 
-    #print (infoBox.text_content())
-
-
+    #Save to MongoDatabase
+    boatDatabase.protectedInsertShip(ship)
     #Appends the ship to the list of ships
     ships.append(ship)
-    shipIDCounter+=1
+    #Increment ship counter
+    shipCounter+=1
 print(json.dumps(ships))

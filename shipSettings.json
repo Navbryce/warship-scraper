@@ -1,5 +1,7 @@
 {
     "websiteRoot": "https://en.wikipedia.org",
+    "dbIp": "localhost",
+    "dbPort": "27017",
     "maxNumberOfImagesForAShip": 5,
     "numberOfImagesForSubsItems": 5
 }
