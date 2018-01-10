@@ -634,86 +634,101 @@ def processRow(rowElement, shipBeingUpdated):
 #Main script
 global numberOfImagesForSubItems
 global maxNumberOfImagesForAShip
+runScript = True
 
-#GET SETTINGS
-
-
-settingsPath = "./shipSettings.json"
-inputPath = "./shipsToScrape.json"
-
-with open(settingsPath, 'r') as file:
-    ingestSettings = json.load(file)
-
-with open(inputPath, 'r') as file:
-    shipsInput = json.load(file)
-
-
-shipPages = shipsInput
-
-websiteRoot = ingestSettings["websiteRoot"]
-databaseIp = ingestSettings["dbIp"]
-databasePort = int(ingestSettings["dbPort"])
-maxNumberOfImagesForAShip = ingestSettings["maxNumberOfImagesForAShip"]
-numberOfImagesForSubItems = ingestSettings["numberOfImagesForSubsItems"]
-
-
-# BEGINS SCRAPING
-boatDatabase = BoatDatabase(databaseIp, databasePort)
-conversionTable = UnitConversionTable()
-shipCounter = 0
-ships = []
-
-for page in shipPages:
-    #Parrellize ?
-    #BINARY SEARCH TREES FOR COMMON ATTRIBUTES
-
-    webpage = requests.get(page['url'])
-    tree = html.fromstring(webpage.content)
-    infoBox = tree.cssselect(".infobox")[0]
-    content = tree.cssselect("#bodyContent")[0]
-    textContent = tree.cssselect("#mw-content-text")[0]
-    firstParagraph = content.cssselect(".mw-parser-output > p")[0]
-    description = formatString(firstParagraph.text_content())
-    oddCharactersInDescription = ["[a]"]
-    description = removeOddCharacters(description, oddCharactersInDescription)
-    #Scrapes ship name
-    shipName = tree.cssselect("#firstHeading")[0].text_content()
-
-    if 'displayName' not in page: #displayName is the name that will be displayed on the website. a display name was not provided
-        displayName = formatShipName(shipName)
+#GET SETTINGS through parameters passed to script
+try:
+    if len(sys.argv) == 1: #the script name is always the first argument
+        print("No arguments were passed, so the script will not run.")
+        print("Please pass: {settingsPath} {ingestPath} or {ingestJSON}")
+        runScript = False
     else:
-        displayName = page['displayName']
+        if len(sys.argv) == 2: #Use default settings because JSON is being directly passed. Not JSONfile path. See help message at bottom
+            settingsPath = "./shipSettings.json" #use default settings
+            shipsJSON = sys.argv[1]
+            shipsInput = json.loads(shipsJSON) #windows shell removes quotes before sending argument, so sending JSON through windows does not work.
+        else:
+            settingsPath = sys.argv[1] #get settings path
+            with open(sys.argv[2], 'r') as file: #get ships to ingest
+                shipsInput = json.load(file)
 
-    ship = {
-            'scrapeURL': page['url'], #used to check uniqueness of ship AKA has it already been added. Note: I could check name and date (some ships have the same name), but I only need to do 1 comparison with URL
-            'configuration': page['configuration'],
-            'displayName': displayName,
-            'name': shipName,
-            'importantDates': [],
-            'awards': [],
-            'armament': [],
-            'armor': [],
-            'description': description,
-            'physicalAttributes': {}
-            }
-    shipImages = []
+        with open(settingsPath, 'r') as file: #If either passing only JSON or two file paths (See help message at bottoms), settings still need to be "read" in
+            ingestSettings = json.load(file)
+except:
+    print("An error occurred with the parameter(s) you entered, so the script will not be run")
+    print("Please pass: {settingsPath} {ingestPath} or {ingestJSON}")
+    traceback.print_exc()
+    runScript = False
 
-    #Scrapes all images and descriptions
-    mainPicture = getInfoBoxPicture(infoBox) #Gets the main picture in the infobox
-    textPictures = getImages(textContent, maxNumberOfImagesForAShip - 1) #-1 because of the main picture
-    ship["pictures"] = [mainPicture] + textPictures
 
-    #get most ship infoBox
-    rows = infoBox.cssselect("tr")
-    for row in rows:
-        processRow(row, ship)
 
-    #All Information Scraped. Save information
+if runScript: #runScript is set false if one of the parameters is bad
+    shipPages = shipsInput
 
-    #Save to MongoDatabase
-    boatDatabase.protectedInsertShip(ship)
-    #Appends the ship to the list of ships
-    ships.append(ship)
-    #Increment ship counter
-    shipCounter+=1
-print(json.dumps(ships))
+    websiteRoot = ingestSettings["websiteRoot"]
+    databaseIp = ingestSettings["dbIp"]
+    databasePort = int(ingestSettings["dbPort"])
+    maxNumberOfImagesForAShip = ingestSettings["maxNumberOfImagesForAShip"]
+    numberOfImagesForSubItems = ingestSettings["numberOfImagesForSubsItems"]
+
+
+    # BEGINS SCRAPING
+    boatDatabase = BoatDatabase(databaseIp, databasePort)
+    conversionTable = UnitConversionTable()
+    shipCounter = 0
+    ships = []
+
+    for page in shipPages:
+        #Parrellize ?
+        #BINARY SEARCH TREES FOR COMMON ATTRIBUTES
+
+        webpage = requests.get(page['url'])
+        tree = html.fromstring(webpage.content)
+        infoBox = tree.cssselect(".infobox")[0]
+        content = tree.cssselect("#bodyContent")[0]
+        textContent = tree.cssselect("#mw-content-text")[0]
+        firstParagraph = content.cssselect(".mw-parser-output > p")[0]
+        description = formatString(firstParagraph.text_content())
+        oddCharactersInDescription = ["[a]"]
+        description = removeOddCharacters(description, oddCharactersInDescription)
+        #Scrapes ship name
+        shipName = tree.cssselect("#firstHeading")[0].text_content()
+
+        if 'displayName' not in page: #displayName is the name that will be displayed on the website. a display name was not provided
+            displayName = formatShipName(shipName)
+        else:
+            displayName = page['displayName']
+
+        ship = {
+                'scrapeURL': page['url'], #used to check uniqueness of ship AKA has it already been added. Note: I could check name and date (some ships have the same name), but I only need to do 1 comparison with URL
+                'configuration': page['configuration'],
+                'displayName': displayName,
+                'name': shipName,
+                'importantDates': [],
+                'awards': [],
+                'armament': [],
+                'armor': [],
+                'description': description,
+                'physicalAttributes': {}
+                }
+        shipImages = []
+
+        #Scrapes all images and descriptions
+        mainPicture = getInfoBoxPicture(infoBox) #Gets the main picture in the infobox
+        textPictures = getImages(textContent, maxNumberOfImagesForAShip - 1) #-1 because of the main picture
+        ship["pictures"] = [mainPicture] + textPictures
+
+        #get most ship infoBox
+        rows = infoBox.cssselect("tr")
+        for row in rows:
+            processRow(row, ship)
+
+        #All Information Scraped. Save information
+
+        #Save to MongoDatabase
+        boatDatabase.protectedInsertShip(ship)
+        #Appends the ship to the list of ships
+        ships.append(ship)
+        #Increment ship counter
+        shipCounter+=1
+    print(json.dumps(ships))
