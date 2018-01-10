@@ -644,7 +644,7 @@ try:
         runScript = False
     else:
         if len(sys.argv) == 2: #Use default settings because JSON is being directly passed. Not JSONfile path. See help message at bottom
-            settingsPath = "./shipSettings.json" #use default settings
+            settingsPath = "A:/DevenirProjectsA/ABoatScraping/shipSettings.json" #use default settings
             shipsJSON = sys.argv[1]
             shipsInput = json.loads(shipsJSON) #windows shell removes quotes before sending argument, so sending JSON through windows does not work.
         else:
@@ -654,9 +654,10 @@ try:
 
         with open(settingsPath, 'r') as file: #If either passing only JSON or two file paths (See help message at bottoms), settings still need to be "read" in
             ingestSettings = json.load(file)
-except:
+except Exception as exception:
     print("An error occurred with the parameter(s) you entered, so the script will not be run")
     print("Please pass: {settingsPath} {ingestPath} or {ingestJSON}")
+    print(exception) #Print exception because when running child process from node, only output directly printed to console can be seen
     traceback.print_exc()
     runScript = False
 
