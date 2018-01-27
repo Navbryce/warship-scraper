@@ -206,7 +206,7 @@ def getImages(pageElement, maxImages): #Page element = DOM element that is a par
     return imageObjArray
 def formatShipName(shipName):
     """Formats a ship name if one is not provided in the scraper parameters"""
-    wordsToFilter = ["hms", "uss", "battleship", "german", "ijn", "("] #in lower case. shipName will be converted to lower case for comparison
+    wordsToFilter = ["hms", "uss", "battleship", "german", "ijn", "(", "sms", "cruiser"] #in lower case. shipName will be converted to lower case for comparison
 
     shipWords = getArrayOfWords(shipName, None, -1)
     if len(shipWords) > 1: #Some ship names might be more than one word. This just filters out the names that are already fine
@@ -265,9 +265,7 @@ def processArmament(armamentElement, armamentString, arrayOfWords, armamentTypeO
     armamentTypeObject - A dictionary with a Calculate(.py) object for each type of armament. Used to calculate average, median, and related values for size and quantity. See processArmamentElements
     """
     pictures = []
-
     armament = None
-
     armamentLinks = armamentElement.cssselect('a')
 
 
@@ -307,8 +305,12 @@ def processArmament(armamentElement, armamentString, arrayOfWords, armamentTypeO
             break #You want to prioritze the first unit
     if armamentUnit is not None:
         armament = Armament(armamentFullName, quantity, armamentUnit, armamentSize)
-    else:
+    elif quantity is not None:
         armament = Armament(armamentFullName, quantity)
+    else: # Should only be called if an error occurs. For example: New York and torpedo tubes
+        print(armamentFullName, "with quantity", quantity)
+
+
 
 
     armament = armament.toSerializableForm()
@@ -354,9 +356,6 @@ def processArmament(armamentElement, armamentString, arrayOfWords, armamentTypeO
         calculateObjectsForType["sizeCalculate"].addValueWithQuantity(armament["size"], armament["quantity"])
 
         calculateObjectsForType["armaments"].append(armament)    #Add it to it's appropriate category
-
-
-
 
     return armament
 
@@ -498,7 +497,8 @@ def processArmamentElements(armamentElements, configurationToKeep):
             if configurationCounter > configurationToKeep:
                 break
         elif (configurationCounter == configurationToKeep) or (oneConfiguration):
-            armament = processArmament(arrayValueElement, armamentFormattedString, arrayOfWords, armamentTypeObjects)
+            if armamentFormattedString.find("removed") == -1: # Some times armaments are listed when they are removed. Ensures the armament wasn't removed
+                armament = processArmament(arrayValueElement, armamentFormattedString, arrayOfWords, armamentTypeObjects)
             values.append(armament)
         armamentElementCounter += 1
 

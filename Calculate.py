@@ -88,8 +88,9 @@ class Calculate(object):
            Length should be an int
            Uses binary search
         """
+        #print("Value: ", value, "Index: ", minIndex, "-", maxIndex, "Array: ",self.sortedValues)
         middleIndex = minIndex + math.ceil((maxIndex - minIndex) / 2)
-        if minIndex == maxIndex or middleIndex >= len(self.sortedValues):
+        if minIndex >= maxIndex or middleIndex >= len(self.sortedValues):
             if middleIndex >= len(self.sortedValues):
                 self.sortedValues.append(value)
             elif self.sortedValues[middleIndex] > value: #if it equals the length, then don't check to see if another element is at that index
