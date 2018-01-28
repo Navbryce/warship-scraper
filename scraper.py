@@ -231,15 +231,19 @@ def formatShipName(shipName):
     return shipName
 
 
-def getInfoBoxPicture(infobox):
+def getInfoBoxPicture(boxWithPicture):
     """returns picture object"""
-    picture = infobox.cssselect("img")[0]
-    src = "https://" + picture.attrib["src"][2:] #remove the first two characters of the URL because they are a filepaths for the server ('//'), not URL. Represent root.
-    description = formatString(picture.attrib["alt"])
-    pictureObject = {
-        "src":  src,
-        "description": description
-    }
+    pictureObject = None;
+
+    images = boxWithPicture.cssselect("img")
+    if len(images) > 0:
+        picture = images[0]
+        src = "https://" + picture.attrib["src"][2:] #remove the first two characters of the URL because they are a filepaths for the server ('//'), not URL. Represent root.
+        description = formatString(picture.attrib["alt"])
+        pictureObject = {
+            "src":  src,
+            "description": description
+        }
     return pictureObject
 
 #Returns a Date object. Assumes the date is in the "day month year" format
@@ -274,11 +278,18 @@ def processArmament(armamentElement, armamentString, arrayOfWords, armamentTypeO
         linkCounter = 0
         for link in armamentLinks:
             linkWordsArray.append(formatString(link.text_content()))
-            #GETS IMAGES for armament. Uses the last armament link if there are more than one.
+            #Gets imagesS for armament. Uses the last armament link if there are more than one.
             if linkCounter == len(armamentLinks) - 1:
                 armamentPage = html.fromstring(requests.get(websiteRoot + link.attrib['href']).content)
                 armamentContent = armamentPage.cssselect('#bodyContent')[0]
-                pictures = getImages(armamentContent, numberOfImagesForSubItems)
+                infoBoxes =  armamentPage.cssselect(".infobox")
+                if len(infoBoxes) > 0: # Gets the main picture
+                    mainPictureBox = infoBoxes[0]
+                    primaryPicture = getInfoBoxPicture(mainPictureBox)
+                    if primaryPicture is not None:
+                        pictures.append(primaryPicture)
+                pictures += getImages(armamentContent, numberOfImagesForSubItems)
+
             linkCounter += 1
 
         armamentFullName = createStringFromArray(0, linkWordsArray)
@@ -286,15 +297,15 @@ def processArmament(armamentElement, armamentString, arrayOfWords, armamentTypeO
         arrayofWordsIncludingX = getArrayOfWords(armamentString, "x", -1)
         armamentFullName = createStringFromArray(1, arrayofWordsIncludingX)
 
+
+    # Gets primary info
     quantity = parseIntFromStringArray(arrayOfWords, 0)
-
-
     charactersToRemove = ['(', ')']
     armamentFullTextWithout = removeOddCharacters(armamentString, charactersToRemove) #not necessarily the full name
     characterToSpace = ['/']
     armamentFullTextWithout = replaceOddCharacters(armamentFullTextWithout, characterToSpace, ' ')
 
-    unitsToTry = ["mm", "cm", "kg"] #Prioritizes the first in the array
+    unitsToTry = ["mm", "cm", "kg", "in", "inch"] #Prioritizes the first in the array
     armamentSize = 0
     armamentUnit = None
     for unit in unitsToTry:
@@ -318,7 +329,7 @@ def processArmament(armamentElement, armamentString, arrayOfWords, armamentTypeO
 
     #Armament is now a dictionary not an object
     if  armament["unknown"]:
-        doNothing = None #currently do nothing
+        doNothing = None #currently do nothing. unknown armaments are not added
     elif armament["isCannon"]:
         #After unit conversions
         calculateObjectsForType = armamentTypeObjects["cannon"]
@@ -517,7 +528,7 @@ def categorizeElement(key, value, valueElement, ship): #Will categorize elements
     #the key value is the key in the highest level of the info table aka under the info table: <key>:<some value>. Note: key has been converted to lowercase
 
     #Find the category that applies
-    importantDateKeyWords = ['commission', 'launch', 'struck', 'laid', 'ordered']
+    importantDateKeyWords = ['commission', 'launch', 'struck', 'laid', 'ordered', 'complete']
     physicalAttributeKeyWord = ['draught', 'displacement', 'length', 'beam', 'depth of hold', 'tons burthen', 'speed', 'draft', 'range', 'installed power']
 
     physicalAttribute = False
