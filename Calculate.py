@@ -116,7 +116,8 @@ class Calculate(object):
                 "median": self.findMedian(),
                 "average": self.calculateAverage(),
                 "minValue": self.getMinValue(),
-                "maxValue": self.getMaxValue()
+                "maxValue": self.getMaxValue(),
+                'numberOfValues': len(self.sortedValues)
             }
         else:
             objectToReturn =  { #Easier to have a boolean than an empty object for the GUI
