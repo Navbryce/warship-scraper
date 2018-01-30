@@ -112,6 +112,7 @@ class Calculate(object):
         if len(self.sortedValues) > 0:
             objectToReturn = {
                 "noValues": False,
+                "sum": self.sum,
                 "mode": self.findMode(),
                 "median": self.findMedian(),
                 "average": self.calculateAverage(),

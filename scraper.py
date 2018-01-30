@@ -259,10 +259,11 @@ def createDateObject(dateString):
                 dateObject = Date.strptime(dateString, "%Y")
             except:
                 print("A date object could not be created from the string: " + dateString)
+                dateObject = None
 
     return dateObject
 
-def processArmament(armamentElement, armamentString, arrayOfWords, armamentTypeObjects):
+def processArmament(armamentElement, armamentString, arrayOfWords, armamentTypeObjects): # Should probably transfer ALL of this code to the Armament class
     """
     armamentElement - the armament dom element
     armamentString and arrayOfWords - Array of words from armament. Sent as parameter because it is already "calcualted" when checking to see if the armament is a date
@@ -276,12 +277,14 @@ def processArmament(armamentElement, armamentString, arrayOfWords, armamentTypeO
     if len(armamentLinks) > 0:#Assumes the full name is contained within links if evaluates to true
         linkWordsArray = [] #each 'word' is probably a phrase
         linkCounter = 0
+        mostRecentPageTitle = None
         for link in armamentLinks:
             linkWordsArray.append(formatString(link.text_content()))
             #Gets imagesS for armament. Uses the last armament link if there are more than one.
             if linkCounter == len(armamentLinks) - 1:
                 armamentPage = html.fromstring(requests.get(websiteRoot + link.attrib['href']).content)
                 armamentContent = armamentPage.cssselect('#bodyContent')[0]
+                mostRecentPageTitle = armamentPage.cssselect("#firstHeading")[0].text_content() # Gets the page title
                 infoBoxes =  armamentPage.cssselect(".infobox")
                 if len(infoBoxes) > 0: # Gets the main picture
                     mainPictureBox = infoBoxes[0]
@@ -291,82 +294,81 @@ def processArmament(armamentElement, armamentString, arrayOfWords, armamentTypeO
                 pictures += getImages(armamentContent, numberOfImagesForSubItems)
 
             linkCounter += 1
+        # armamentFullName = createStringFromArray(0, linkWordsArray) . Links tended to only include part of the name. More efficient but less accurate
 
-        armamentFullName = createStringFromArray(0, linkWordsArray)
-    else: #tries to get the name without the link if there are no links
-        arrayofWordsIncludingX = getArrayOfWords(armamentString, "x", -1)
-        armamentFullName = createStringFromArray(1, arrayofWordsIncludingX)
+    #tries to get the name without the link if there are no links
+    arrayofWordsIncludingX = getArrayOfWords(armamentString, "x", -1)
+    armamentFullName = createStringFromArray(1, arrayofWordsIncludingX)
 
 
     # Gets primary info
     quantity = parseIntFromStringArray(arrayOfWords, 0)
-    charactersToRemove = ['(', ')']
-    armamentFullTextWithout = removeOddCharacters(armamentString, charactersToRemove) #not necessarily the full name
-    characterToSpace = ['/']
-    armamentFullTextWithout = replaceOddCharacters(armamentFullTextWithout, characterToSpace, ' ')
+    if quantity is None:# Should only be called if an error occurs. For example: New York and torpedo tubes
+        print("Error - Source: " + arrayOfWords + "\nName: " +armamentFullName, "with quantity", quantity)
+        armament = None;
+    else:
+        charactersToRemove = ['(', ')']
+        armamentFullTextWithout = removeOddCharacters(armamentString, charactersToRemove) #not necessarily the full name
+        characterToSpace = ['/']
+        armamentFullTextWithout = replaceOddCharacters(armamentFullTextWithout, characterToSpace, ' ')
 
-    unitsToTry = ["mm", "cm", "kg", "in", "inch"] #Prioritizes the first in the array
-    armamentSize = 0
-    armamentUnit = None
-    for unit in unitsToTry:
-        armamentSizeArray = getWordsBeforeUnit(armamentFullTextWithout, unit, 1)
-        if len(armamentSizeArray) == 1:
-            armamentSize = armamentSizeArray[0]
-            armamentUnit = unit
-            break #You want to prioritze the first unit
-    if armamentUnit is not None:
-        armament = Armament(armamentFullName, quantity, armamentUnit, armamentSize)
-    elif quantity is not None:
-        armament = Armament(armamentFullName, quantity)
-    else: # Should only be called if an error occurs. For example: New York and torpedo tubes
-        print(armamentFullName, "with quantity", quantity)
+        unitsToTry = ["mm", "cm", "kg", "in", "inch"] #Prioritizes the first in the array
+        armamentSize = 0
+        armamentUnit = None
+        for unit in unitsToTry:
+            armamentSizeArray = getWordsBeforeUnit(armamentFullTextWithout, unit, 1)
+            if len(armamentSizeArray) == 1:
+                armamentSize = armamentSizeArray[0]
+                armamentUnit = unit
+                break #You want to prioritze the first unit
+        if armamentUnit is not None:
+            armament = Armament(armamentFullName, quantity, armamentUnit, armamentSize)
+        elif quantity is not None:
+            armament = Armament(armamentFullName, quantity)
 
+        armament = armament.toSerializableForm()
+        armament['pictures'] = pictures #Should really be set in the armament constructor. Pictures defined at the top of the function and assigned under certain conditions in the link if statement
 
-
-
-    armament = armament.toSerializableForm()
-    armament['pictures'] = pictures #Should really be set in the armament constructor. Pictures defined at the top of the function and assigned under certain conditions in the link if statement
-
-    #Armament is now a dictionary not an object
-    if  armament["unknown"]:
-        doNothing = None #currently do nothing. unknown armaments are not added
-    elif armament["isCannon"]:
-        #After unit conversions
-        calculateObjectsForType = armamentTypeObjects["cannon"]
-        calculateObjectsForType["sizeCalculate"].addValueWithQuantity(armament["size"], armament["quantity"])
-        calculateObjectsForType["armaments"].append(armament)    #Add it to it's appropriate category
-
-
-    elif armament["isMissile"]:
-        #After unit conversions
-        calculateObjectsForType = armamentTypeObjects["missile"]
-        calculateObjectsForType["sizeCalculate"].addValueWithQuantity(armament["size"], armament["quantity"])
-        calculateObjectsForType["armaments"].append(armament)    #Add it to it's appropriate category
-
-    elif armament["isTorpedo"]: #Unit for torpedo guns and also deals with "calculate object"
-        newUnit = "mm"
-        newValue = conversionTable.convertUnit(armament["size"], armament["unit"], newUnit)
-        armament["unit"] = newUnit
-        armament["size"] = newValue
-
-        #After unit conversions
-        calculateObjectsForType = armamentTypeObjects["torpedo"]
-        calculateObjectsForType["sizeCalculate"].addValueWithQuantity(armament["size"], armament["quantity"])
-
-        calculateObjectsForType["armaments"].append(armament)    #Add it to it's appropriate category
+        #Armament is now a dictionary not an object
+        if  armament["unknown"]:
+            doNothing = None #currently do nothing. unknown armaments are not added
+        elif armament["isCannon"]:
+            #After unit conversions
+            calculateObjectsForType = armamentTypeObjects["cannon"]
+            calculateObjectsForType["sizeCalculate"].addValueWithQuantity(armament["size"], armament["quantity"])
+            calculateObjectsForType["armaments"].append(armament)    #Add it to it's appropriate category
 
 
-    else: #Unit conversion for normal guns and also deals with "calculate object"
-        newUnit = "mm"
-        newValue = conversionTable.convertUnit(armament["size"], armament["unit"], newUnit)
-        armament["unit"] = newUnit
-        armament["size"] = newValue
+        elif armament["isMissile"]:
+            #After unit conversions
+            calculateObjectsForType = armamentTypeObjects["missile"]
+            calculateObjectsForType["sizeCalculate"].addValueWithQuantity(armament["size"], armament["quantity"])
+            calculateObjectsForType["armaments"].append(armament)    #Add it to it's appropriate category
 
-        #After unit conversions
-        calculateObjectsForType = armamentTypeObjects["normalGun"]
-        calculateObjectsForType["sizeCalculate"].addValueWithQuantity(armament["size"], armament["quantity"])
+        elif armament["isTorpedo"]: #Unit for torpedo guns and also deals with "calculate object"
+            newUnit = "mm"
+            newValue = conversionTable.convertUnit(armament["size"], armament["unit"], newUnit)
+            armament["unit"] = newUnit
+            armament["size"] = newValue
 
-        calculateObjectsForType["armaments"].append(armament)    #Add it to it's appropriate category
+            #After unit conversions
+            calculateObjectsForType = armamentTypeObjects["torpedo"]
+            calculateObjectsForType["sizeCalculate"].addValueWithQuantity(armament["size"], armament["quantity"])
+
+            calculateObjectsForType["armaments"].append(armament)    #Add it to it's appropriate category
+
+
+        else: #Unit conversion for normal guns and also deals with "calculate object"
+            newUnit = "mm"
+            newValue = conversionTable.convertUnit(armament["size"], armament["unit"], newUnit)
+            armament["unit"] = newUnit
+            armament["size"] = newValue
+
+            #After unit conversions
+            calculateObjectsForType = armamentTypeObjects["normalGun"]
+            calculateObjectsForType["sizeCalculate"].addValueWithQuantity(armament["size"], armament["quantity"])
+
+            calculateObjectsForType["armaments"].append(armament)    #Add it to it's appropriate category
 
     return armament
 
@@ -478,7 +480,6 @@ def calculateComplement(valueString, ship):
 
 def processArmamentElements(armamentElements, configurationToKeep):
     values = []
-    configurationCounter = -1 #If multiple configurations, the first one will have a date at the top of it
     armamentElementCounter = 0
     oneConfiguration = False #If there is only one configuration, keep all armaments. The counter increments the configuration counter by one when it runs into its first null (a date) because if there are two configurations, both have a dates. 1st configuration is after the FIRST null except for when there is only ONE configuration (no dates, no nulls)
 
@@ -496,11 +497,12 @@ def processArmamentElements(armamentElements, configurationToKeep):
         }
         armamentTypeObjects[typeOfArmament] = calculateDictionaryForType
 
+    configurationCounter = -1 #If multiple configurations, the first one will have a date at the top of it
 
     for arrayValueElement in armamentElements:
         armamentFormattedString = formatString(arrayValueElement.text_content())
         arrayOfWords = getArrayOfWords(armamentFormattedString, None, -1)
-        isDate = len(arrayOfWords) < 2
+        isDate = len(arrayOfWords) < 3
         if isDate == False and armamentElementCounter == 0: #The first "value" is not a configuration year, so it must only have one configuration
             oneConfiguration = True
         if isDate:
@@ -510,7 +512,10 @@ def processArmamentElements(armamentElements, configurationToKeep):
         elif (configurationCounter == configurationToKeep) or (oneConfiguration):
             if armamentFormattedString.find("removed") == -1: # Some times armaments are listed when they are removed. Ensures the armament wasn't removed
                 armament = processArmament(arrayValueElement, armamentFormattedString, arrayOfWords, armamentTypeObjects)
-            values.append(armament)
+                if armament is not None:
+                    values.append(armament)
+                else:
+                    print("Tried to add a None armament for: ", arrayOfWords)
         armamentElementCounter += 1
 
     #Get a serializable dictionary that contains each armament type's Calculate Object in the form of a dictionary
@@ -549,8 +554,9 @@ def categorizeElement(key, value, valueElement, ship): #Will categorize elements
     if physicalAttribute:
         ship["physicalAttributes"][key] = processStandardValue(value) #ship["physicalAttributes"] object defined at ship construction
     elif importantDate:
-        date = createDateObject(value).toSerializableForm()
+        date = createDateObject(value)
         if date is not None:
+            date = createDateObject(value).toSerializableForm()
             dateElement = {"significance": key, "date": date}
             ship['importantDates'].append(dateElement)
     elif key.find('awards') >= 0: #Some pages have this as a list. Some only have it as a single element. Standardizes to an array

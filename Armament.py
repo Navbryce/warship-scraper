@@ -1,6 +1,5 @@
 class Armament(object):
     numberOfBarrels = -1
-    fullName = None
     unit = None
     size = None
     isMissile = None
@@ -11,6 +10,7 @@ class Armament(object):
 
     def __init__(self, fullName, numberOfBarrels, unit = None, size = None):
         self.fullName = fullName
+        self.lowerCaseName = self.fullName.lower(); # Stored along with the unalterted fullname because redoing caps in the visualizatoin is difficult because of acronyms vs standard words
         self.numberOfBarrels = numberOfBarrels
         self.isMissile = self.isMissileCheck()
 
@@ -29,7 +29,7 @@ class Armament(object):
         isMissile = False
         missileKeysWords = ['missile']
         for keyword in missileKeysWords:
-            isMissile = self.fullName.find(keyword) >= 0
+            isMissile = self.lowerCaseName.find(keyword) >= 0
             if (isMissile):
                 break
         return isMissile
@@ -53,9 +53,9 @@ class Armament(object):
         Will return false if no unit
         """
         isTorpedo = False
-        torpedoKeywords = ["torpedo"]
+        torpedoKeywords = ["torpedo", "tubes"]
         for torpedoKeyword in torpedoKeywords:
-            if self.fullName.find(torpedoKeyword) >= 0:
+            if self.lowerCaseName.find(torpedoKeyword) >= 0:
                 isTorpedo = True
                 break
         return isTorpedo
@@ -71,5 +71,5 @@ class Armament(object):
             armament['isCannon'] = self.isCannon
             armament['isTorpedo'] = self.isTorpedo
             armament['isMissile'] = self.isMissile
-        
+
         return armament
