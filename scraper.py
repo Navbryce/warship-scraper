@@ -206,7 +206,7 @@ def getImages(pageElement, maxImages): #Page element = DOM element that is a par
     return imageObjArray
 def formatShipName(shipName):
     """Formats a ship name if one is not provided in the scraper parameters"""
-    wordsToFilter = ["hms", "uss", "battleship", "german", "japanese", "american", "ijn", "(", "sms", "cruiser"] #in lower case. shipName will be converted to lower case for comparison
+    wordsToFilter = ["hms", "uss", "battleship", "german", "japanese", "italian", "american", "ijn", "(", "sms", "cruiser"] #in lower case. shipName will be converted to lower case for comparison
 
     shipWords = getArrayOfWords(shipName, None, -1)
     if len(shipWords) > 1: #Some ship names might be more than one word. This just filters out the names that are already fine
@@ -296,13 +296,18 @@ def processArmament(armamentElement, armamentString, arrayOfWords, armamentTypeO
             linkCounter += 1
         # armamentFullName = createStringFromArray(0, linkWordsArray) . Links tended to only include part of the name. More efficient but less accurate
 
-    #tries to get the name without the link if there are no links
+    # tries to get the name without the link if there are no links
     arrayofWordsIncludingX = getArrayOfWords(armamentString, "x", -1)
+    # Gets quantity info
+    quantityBeforeConversion = parseIntFromStringArray(arrayOfWords, 0)
+    quantity = conversionTable.convertUnit(quantityBeforeConversion, "word", arrayofWordsIncludingX[1]) # If double, triple are the first words, will multiply the quantity by the appropriate multiplier. If it's some other word (or number), it will just return the original value
+    if quantityBeforeConversion != quantity: # One of the special "quantity" words must be the first word. Remove the word from the namebecause we converted the quantity to match the word aka 3 triple = 9 barrels
+        arrayofWordsIncludingX.pop(0) # removes the first word.
+
+    # Get name from array of words after x. The first word might have been removed depending on the conversion
     armamentFullName = createStringFromArray(1, arrayofWordsIncludingX)
 
 
-    # Gets primary info
-    quantity = parseIntFromStringArray(arrayOfWords, 0)
     if quantity is None:# Should only be called if an error occurs. For example: New York and torpedo tubes
         print("Error - Source: " + arrayOfWords + "\nName: " +armamentFullName, "with quantity", quantity)
         armament = None;
@@ -443,8 +448,8 @@ def processStandardValue(valueString):
         Else, it will just return the valueString
     """
     oddCharacters = ["(", ")"]
-    replaceWithSpaceCharacters = ["[", "]", "/"]
-    unitsToSearchFor = ["m", "km", "t", "long tons", "tons", "kW", "kn", "knots", "in", "inch"]
+    replaceWithSpaceCharacters = ["[", "]"]
+    unitsToSearchFor = ["km", "nmi", "kn", "knots", "m", "t", "long tons", "tons", "kW", "in", "inch"] # Range units prioritized first because some ranges have speeds associated with them (we don't want to pull the speed value)
 
     returnValue = valueString #Will return the valueString if no units are found
 

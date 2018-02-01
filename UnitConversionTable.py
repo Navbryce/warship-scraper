@@ -14,6 +14,12 @@ class UnitConversionTable(object):
                 'cm': .1,
                 'in': .0393701,
                 'm': .001
+            },
+            'word': {
+                'single': 1,
+                'double': 2,
+                'triple': 3,
+                'quad': 4
             }
         }
 
@@ -27,7 +33,12 @@ class UnitConversionTable(object):
         else:
             if currentUnit in self.conversionDictionary: #we can convert directly because currentUnit is a primary unit
                 conversionConstantsArray = self.conversionDictionary[currentUnit]
-                newValue = value * float(conversionConstantsArray[newUnit])
+                if newUnit not in conversionConstantsArray: #The convertToUnit does not exist.
+                    newValue = value
+                    if currentUnit != "word": # Will not print if it's "word" unit because frequently non-unit words are given as units
+                        print("Could not convert to unit " + newUnit)
+                else:
+                    newValue = value * float(conversionConstantsArray[newUnit.lower()])
             else: #It is not a primary unit so we need to find out what type of unit it is
                 unitCategory = self.getUnitCategory(currentUnit)
                 if unitCategory == "length": #convert to millimeters, a primary value, so we can convert to everything else
