@@ -18,6 +18,7 @@ class UnitConversionTable(object):
             'word': {
                 'single': 1,
                 'double': 2,
+                'dual': 2,
                 'triple': 3,
                 'quad': 4
             }
