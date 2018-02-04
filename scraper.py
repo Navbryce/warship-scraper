@@ -44,13 +44,25 @@ def isWordInt(word):
     Else: nothing will be returned
     """
     try:
-        oddChracters = [","]
-        word = removeOddCharacters(word, oddChracters)
+        oddCharacters = [","]
+        word = removeOddCharacters(word, oddCharacters)
         intObject = int(word)
     except:
         #traceback.print_exc()
         intObject = None
     return intObject
+def isWordFloat(word):
+    """
+    word - Word being observed
+    If: the word is an int, the int will be returned
+    Else: nothing will be returned
+    """
+    try:
+        value = float(word)
+    except:
+        #traceback.print_exc()
+        value = None
+    return value
 
 def parseIntFromStringArray(haystackArray, intToKeep):
     intCounter = -1
@@ -60,7 +72,7 @@ def parseIntFromStringArray(haystackArray, intToKeep):
     """
     intObject = None
     for word in haystackArray:
-        possibleInteger = isWordInt(word)
+        possibleInteger = isWordFloat(word)
         if possibleInteger is not None:
             intObject = possibleInteger
             intCounter += 1
@@ -142,6 +154,20 @@ def getArrayOfWords(haystack, needle, numberOfWords): #number of words including
             words.append(word)
             position = positionOfNextSpace + 1
     return words
+
+def getValueFromUnitString (string, unit):
+    """Tries to pull a value from a string in the following format: '{value}{unit}'. Note there is no space between the two. Else returns none"""
+    value = None;
+    sizeOfString = len(string)
+    sizeOfUnit = len(unit)
+    indexOfUnit = string.find(unit);
+    if indexOfUnit > 0 and indexOfUnit + sizeOfUnit == sizeOfString: # There must be room for a value with at least 1 digit so the unit can't be at index 0 and there can't be anything after the unit
+        valueString = string[0:indexOfUnit] # Everything before the value must be part of the value
+        value = isWordFloat(valueString) # Will return None if not int . Change to double?
+
+    #print("String: " + string + " Unit: " + unit + " Value: ", value)
+    return value
+
 
 def deleteAnnotations(string):
     """deletes in-line annotations found on pages. For example, "[1]"""
@@ -297,15 +323,15 @@ def processArmament(armamentElement, armamentString, arrayOfWords, armamentTypeO
         # armamentFullName = createStringFromArray(0, linkWordsArray) . Links tended to only include part of the name. More efficient but less accurate
 
     # tries to get the name without the link if there are no links
-    arrayofWordsIncludingX = getArrayOfWords(armamentString, "x", -1)
+    arrayOfName = getArrayOfWords(armamentString, "x", -1)
     # Gets quantity info
     quantityBeforeConversion = parseIntFromStringArray(arrayOfWords, 0)
-    quantity = conversionTable.convertUnit(quantityBeforeConversion, "word", arrayofWordsIncludingX[1]) # If double, triple are the first words, will multiply the quantity by the appropriate multiplier. If it's some other word (or number), it will just return the original value
+    quantity = conversionTable.convertUnit(quantityBeforeConversion, "word", arrayOfName[1]) # If double, triple are the first words, will multiply the quantity by the appropriate multiplier. If it's some other word (or number), it will just return the original value
     if quantityBeforeConversion != quantity: # One of the special "quantity" words must be the first word. Remove the word from the namebecause we converted the quantity to match the word aka 3 triple = 9 barrels
-        arrayofWordsIncludingX.pop(0) # removes the first word.
+        arrayOfName.pop(0) # removes the first word.
 
     # Get name from array of words after x. The first word might have been removed depending on the conversion
-    armamentFullName = createStringFromArray(1, arrayofWordsIncludingX)
+    armamentFullName = createStringFromArray(1, arrayOfName)
 
 
     if quantity is None:# Should only be called if an error occurs. For example: New York and torpedo tubes
@@ -322,10 +348,22 @@ def processArmament(armamentElement, armamentString, arrayOfWords, armamentTypeO
         armamentUnit = None
         for unit in unitsToTry:
             armamentSizeArray = getWordsBeforeUnit(armamentFullTextWithout, unit, 1)
+
             if len(armamentSizeArray) == 1:
                 armamentSize = armamentSizeArray[0]
                 armamentUnit = unit
                 break #You want to prioritze the first unit
+
+        if armamentUnit is None: # Try to find the unit assuming there is no space between the value and unit (not used by default because resource intensive)
+            for word in arrayOfWords:
+                for unit in unitsToTry:
+                    armamentSize = getValueFromUnitString(word, unit)
+                    if armamentSize is not None:
+                        armamentUnit = unit;
+                        break
+                if armamentUnit is not None: # An armament unit was found
+                    break
+
         if armamentUnit is not None:
             armament = Armament(armamentFullName, quantity, armamentUnit, armamentSize)
         elif quantity is not None:
