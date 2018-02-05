@@ -44,7 +44,7 @@ def isWordInt(word):
     Else: nothing will be returned
     """
     try:
-        oddCharacters = [","]
+        oddCharacters = [","] # Some people use commas to format large numbers
         word = removeOddCharacters(word, oddCharacters)
         intObject = int(word)
     except:
@@ -58,6 +58,8 @@ def isWordFloat(word):
     Else: nothing will be returned
     """
     try:
+        oddCharacters = [","] # Some people use commas to format large numbers
+        word = removeOddCharacters(word, oddCharacters)
         value = float(word)
     except:
         #traceback.print_exc()
@@ -446,16 +448,16 @@ def processArmor(armorElement, listTitleInput):
                     armorUnit = unit
                     if len(armorWidthArray) == 3 and armorWidthArray[1] == "to": #If there aren't three words, that means it's impossible for it to be a range. @ Index 1 is where "to" should be
                         armorRange = True
-                        armorMaxValue = armorWidthArray[0] #0 is the first word before the unit
-                        armorMinValue = armorWidthArray[2] #2 is the third word after the unit
+                        armorMaxValue = isWordFloat(armorWidthArray[0]) #0 is the first word before the unit
+                        armorMinValue = isWordFloat(armorWidthArray[2]) #2 is the third word after the unit
                     elif armorWidthArray[0].find("-") >= 0:
                         armorRange = True
                         armorRangeValues = armorWidthArray[0] #The armor is a range. The first word before the unit has a dash in it (presumbably A-B where A and B are some constant)
                         dashIndex = armorRangeValues.find("-")
-                        armorMinValue = armorRangeValues[0:dashIndex]
-                        armorMaxValue = armorRangeValues[dashIndex + 1:]
+                        armorMinValue = isWordFloat(armorRangeValues[0:dashIndex])
+                        armorMaxValue = isWordFloat(armorRangeValues[dashIndex + 1:])
                     else: #Not a range of values
-                        armorMinValue = armorWidthArray[0]
+                        armorMinValue = isWordFloat(armorWidthArray[0])
                         armorMaxValue = armorMinValue
 
                     if listTitleInput != None and len(armorElement.cssselect("a")) == 0: #you can identify a sub list item by its LACK of a link
