@@ -498,8 +498,11 @@ def processStandardValue(valueString):
     for unit in unitsToSearchFor:
         wordsBeforeUnit = getWordsBeforeUnit(searchString, unit, 1) #Returns an array of words before the unit of at most size 1. Note: units must be surrounded by spaces
         if len(wordsBeforeUnit) == 1: #If true, the string contains the unit
+            value = isWordFloat(wordsBeforeUnit[0])
+            if value is None: # if it can't be processed as a float
+                value = wordsBeforeUnit[0]
             returnValue = {
-                "value": wordsBeforeUnit[0],
+                "value": value,
                 "unit": unit
             }
             break
@@ -595,7 +598,6 @@ def categorizeElement(key, value, valueElement, ship): #Will categorize elements
 
     physicalAttribute = False
     importantDate = False
-
     for keyWord in physicalAttributeKeyWord:
         if key.find(keyWord) >= 0:
             physicalAttribute = True
@@ -643,7 +645,7 @@ def processRow(rowElement, shipBeingUpdated):
         if len(arrayValueElements)==0: #dealing with a single value element aka not an array
             categorizeElement(key, formatString(valueElement.text_content()), valueElement, ship) # the object referenced by 'ship' modified in function. thus, no ship returned because reference points to the same object
         else :
-            keysWithNoArray = ["draught", "length", "displacement"] #Should contain the keys that should NOT have an array of objects. For example, some ships have multiple displacements listed--scraper should only keep one
+            keysWithNoArray = ["draught", "length", "displacement", "speed"] #Should contain the keys that should NOT have an array of objects. For example, some ships have multiple displacements listed--scraper should only keep one
 
             values = []
             addvaluesToShip = True
