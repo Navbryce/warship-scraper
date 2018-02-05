@@ -510,16 +510,28 @@ def calculateComplement(valueString, ship):
 
     THIS METHOD MIGHT BE CALLED MULTIPLE TIMES FOR ONE SHIP. IF it is, it will add the existing value with the new value.
     """
+    valueString = deleteAnnotations(valueString)
     currentComplementValue = 0
+    valueStringContainsOfficersAndEnlisted = valueString.find("officers") > 0 and valueString.find("enlisted") > 0 # IF true, the any other "complement" strings must just be from a different configuration, so only keep the value from the latest complement string(don't sum all values).
     if "complement" in ship:
         currentComplementValue = ship["complement"]
-    wordsArray = getArrayOfWords(valueString, None, -1)
-    for word in wordsArray:
-        possibleNumber = isWordInt(word)
-        if possibleNumber is not None:
-            currentComplementValue += possibleNumber
+    if currentComplementValue == 0 or not valueStringContainsOfficersAndEnlisted: # SEE ABOVE. Function calculateCOmplement might be called multiple times if multiple configurations or complement listed as series of strings. If multiple configurations, keep the first
+        wordsArray = getArrayOfWords(valueString, None, -1)
+        for word in wordsArray:
+            rangeIndex = word.find("-")
+            if rangeIndex > 0: # if a dash exists to represent a range of numbers, it would make no sense to be at the first character in the string so > 0 (or it might not even be in the string)
+                firstValue = isWordInt(word[0:rangeIndex])
+                secondValue = isWordInt(word[rangeIndex + 1:])
+                if firstValue is not None and secondValue is not None: # If it is a range, find the average. Treat that like the complement number
+                    averageObject = Calculate([firstValue, secondValue])
+                    possibleNumber = averageObject.calculateAverage()
+                    currentComplementValue += possibleNumber
+            else:
+                possibleNumber = isWordInt(word)
+                if possibleNumber is not None:
+                    currentComplementValue += possibleNumber
 
-    ship['complement'] = currentComplementValue
+        ship['complement'] = currentComplementValue
 
 def processArmamentElements(armamentElements, configurationToKeep):
     values = []
