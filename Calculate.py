@@ -15,6 +15,16 @@ class Calculate(object):
             self.sum += value
             self.addFrequency(value)
 
+    # Static Methods
+    @staticmethod
+    def withinTolerance(firstValue, secondValue, tolerance):
+        """
+        tolerance should be a percent in the form of a decimal
+        firstValue and secondValue should be floats
+        returns true if second value is within tolerance of first value
+        """
+        delta = abs(secondValue - firstValue)
+        return delta/firstValue <= tolerance
 
     #ACCOUNT FOR QUANTITY
     def addValue(self, value):
@@ -27,6 +37,7 @@ class Calculate(object):
         self.sum += value
         self.addFrequency(value)
 
+    #Normal Methods
 
     def addValueWithQuantity(self, value, n):
         """Will add the value n times"""
@@ -125,6 +136,7 @@ class Calculate(object):
                 "noValues": True
             }
         return objectToReturn
+
 
 
 
