@@ -1,3 +1,6 @@
+import sys
+sys.path.insert(0, "../..")
+from ABoatScraping.Calculate import Calculate
 from Edge import Edge
 
 class ShipCompare(object):
