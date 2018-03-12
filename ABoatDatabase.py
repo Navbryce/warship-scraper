@@ -52,4 +52,4 @@ class BoatDatabase(object):
         Will return an array of ships dictionaries that match the filter.
         filterDictionary - See MongoDB "find filters" for more information on filters
         """
-        return self.shipsCollection.find(filter)
+        return self.shipsCollection.find(filterDictionary)

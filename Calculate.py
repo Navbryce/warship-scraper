@@ -25,6 +25,15 @@ class Calculate(object):
         """
         delta = abs(secondValue - firstValue)
         return delta/firstValue <= tolerance
+    @staticmethod
+    def withinRange(firstValue, secondValue, range):
+        """
+        range is the maximum distance from the firstValue (+-)
+        returns true if the second value is within the range AKA max distance of the first value
+        """
+        delta = abs(secondValue - firstValue)
+        return delta <= range
+
 
     #ACCOUNT FOR QUANTITY
     def addValue(self, value):
