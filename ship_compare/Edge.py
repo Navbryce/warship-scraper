@@ -18,5 +18,5 @@ class Edge(object):
             'source': self.source,
             'target': self.target,
             'magnitude': self.magnitude,
-            'reasons': self.reason
+            'reasons': self.reasons
         }
