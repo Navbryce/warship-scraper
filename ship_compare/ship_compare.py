@@ -9,40 +9,21 @@ class ShipCompare(object):
     def __init__ (self, shipOne, shipTwo):
         self.shipOne = shipOne
         self.shipTwo = shipTwo
-        self.edges = {} # A dictionary where each property is an edge + "+" + source combination
+        self.edge = Edge(self.shipOne["scrapeURL"], self.shipTwo["scrapeURL"], 0, [])
 
         self.runDateComparisons()
 
 
-    def addEdge(self, source, target, magnitude, reasons): # heka unecessary right now since this class only compares two ships. Will remove in future. Will be added to a higher level class that creates instances of ShipCompare
+    def addEdge(self, source, target, magnitude, reasons):
         """
-        reasons should an array of strings
-        checks to see if edge already exists
+        adds to magnitude of existing edge
         """
-        key = self.generatePropertyKey(source, target)
-        if key in self.edges: # the edge is already in the array
-            existingEdge = self.edges[key]
-            existingEdge.incrementMagnitude(magnitude, reasons)
-        else:
-            self.createEdge(source, target, magnitude, reasons)
-    def createEdge(self, source, target, magnitude, reasons):
-        """
-        creates edges
-        does not check to see if edge exists, so if the same edge already exists, the new edge will overrite it
-        """
-        edge = Edge(source, target, magnitude, reasons)
-        self.edges[self.generatePropertyKey(source, target)] = edge
+        existingEdge = self.edge
+        existingEdge.incrementMagnitude(magnitude, reasons)
 
-    def generatePropertyKey(self, source, target):
-        """generates a 'propertykey'. Essentially a key in the edges map (AKA python dictionary) """
-        return source + "+" + target
-
-    def getEdgesBetweenShips(self):
+    def getSerializableEdge(self):
         """ Returns the seraliazed edges between ships in array. Each object of the array is an Edge object"""
-        serializedEdges = []
-        for edgeKey in self.edges:
-            serializedEdges.append(self.edges[edgeKey].toSerializableForm())
-        return serializedEdges
+        return self.edge.toSerializableForm()
 
     def runDateComparisons(self):
         """runs the comparison tests involved with dates. only run date comparison tests for types of dates all ships have in order to keep the edges balanced"""
@@ -76,4 +57,4 @@ ship_one = boatDatabase.findShips(filter)[0]
 filter = {"scrapeURL": "https://en.wikipedia.org/wiki/German_battleship_Gneisenau"}
 ship_two = boatDatabase.findShips(filter)[0]
 shipCompareTest = ShipCompare(ship_one, ship_two)
-print(json.dumps(shipCompareTest.getEdgesBetweenShips()))
+print(json.dumps(shipCompareTest.getSerializableEdge()))
