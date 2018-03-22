@@ -51,6 +51,7 @@ class ShipCompare(object):
         """compares values within the standard tolerance. certain values might want a custom tolerance. this just provides a standard method"""
         return Calculate.withinTolerance(value_one, value_two, .05) #5% tolerance
 
+# Test script 
 boatDatabase = BoatDatabase("localhost", 27017)
 filter = {"scrapeURL": "https://en.wikipedia.org/wiki/German_battleship_Scharnhorst"}
 ship_one = boatDatabase.findShips(filter)[0]

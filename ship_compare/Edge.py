@@ -13,7 +13,6 @@ class Edge(object):
         """generates a 'propertykey'. Essentially a key in the edges map (AKA python dictionary) """
         sourceHash = self.getHashForString(source)
         targetHash = self.getHashForString(target)
-        print(sourceHash)
         return sourceHash*targetHash # ensures a unique value for each source, target combination THAT IS NOT dependent on which is source and which is hash. 
 
     def getHashForString(self, string):

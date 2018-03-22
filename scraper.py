@@ -616,8 +616,7 @@ def categorizeElement(key, value, valueElement, ship): #Will categorize elements
         date = createDateObject(value)
         if date is not None:
             date = createDateObject(value).toSerializableForm()
-            dateElement = {"significance": key, "date": date}
-            ship['importantDates'].append(dateElement)
+            ship['importantDates'][key] = date # Essentially a hash map to make searching faster
     elif key.find('awards') >= 0: #Some pages have this as a list. Some only have it as a single element. Standardizes to an array
         ship['awards'].append(value)
     elif key.find('class') >=0: #Separates class and type in a cell element. First word is always class. Words after are always type. Some ships only have a "type" not a class. This statement won't evluate in that situation, so it still works.
@@ -782,7 +781,7 @@ if runScript: #runScript is set false if one of the parameters is bad
                 'configuration': page['configuration'],
                 'displayName': displayName,
                 'name': shipName,
-                'importantDates': [],
+                'importantDates': {},
                 'awards': [],
                 'armament': [],
                 'armor': [],
