@@ -478,10 +478,21 @@ def processArmor(armorElement, listTitleInput):
     return armorSerializable
 
 def processClassAndType(valueString, ship):
-    wordsArray = getArrayOfWords(valueString, None, -1)
-    ship['class'] = wordsArray[0]
+    valueString = valueString.lower()
+    indexOfClass = valueString.find("class")
+    if indexOfClass == -1:
+        print("Could not find type and class for " + ship["displayName"] + ". Trying basic method...")
+        wordsArray = getArrayOfWords(valueString, None, -1)
+        classOfShip = wordsArray[0]
+        type = createStringFromArray(1, wordsArray) #All words after class are part of the type
+    else:
+        endOfClassWord = indexOfClass + 5
+        classOfShip = valueString[0:endOfClassWord]
+        type = valueString[endOfClassWord:]
 
-    ship['type'] = createStringFromArray(1, wordsArray) #All words after class are part of the type
+    ship["class"] = classOfShip
+    ship["type"] = type
+
 def processStandardValue(valueString):
     """valueString -- Value string
         Looks for certain units. If the value contains a unit will return a dictionary with the unit and value keys.
