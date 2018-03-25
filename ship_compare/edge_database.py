@@ -11,6 +11,12 @@ class EdgeDatabase(object):
         self.database = self.client.ABoat
         self.edgesCollection = self.database.edges
 
+    def closeConnection(self):
+        self.client.close()
+
+    def deleteEdges (self, filter):
+        return self.edgesCollection.delete_many(filter)
+
     def insertSingleEdge(self, edge):
         """
         edge - Must be a dictionary. edgeID (edge source and target) combination must be unique

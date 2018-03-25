@@ -6,6 +6,7 @@ from Date import Date
 from UnitConversionTable import UnitConversionTable
 from Calculate import Calculate
 from ABoatDatabase import BoatDatabase
+from ship_compare.compare_ship_to_database import DatabaseCompare
 from unidecode import unidecode
 import requests
 import sys
@@ -498,9 +499,10 @@ def processStandardValue(valueString):
         Looks for certain units. If the value contains a unit will return a dictionary with the unit and value keys.
         Else, it will just return the valueString
     """
+    print(valueString)
     oddCharacters = ["(", ")"]
     replaceWithSpaceCharacters = ["[", "]"]
-    unitsToSearchFor = ["km", "nmi", "kn", "knots", "m", "t", "long tons", "tons", "kW", "in", "inch"] # Range units prioritized first because some ranges have speeds associated with them (we don't want to pull the speed value)
+    unitsToSearchFor = ["km", "nmi", "kn", "knots", "m", "ft", "t", "long tons", "tons", "kW", "in", "inch"] # Range units prioritized first because some ranges have speeds associated with them (we don't want to pull the speed value)
 
     returnValue = valueString #Will return the valueString if no units are found
 
@@ -697,7 +699,7 @@ def processRow(rowElement, shipBeingUpdated):
                     categorizeElement(key, valueString, complementElement, ship) #See how categorize elemtn categorizes complement. It will sum the values of all complement elements
                 addvaluesToShip = False
             else:
-                #If the property should not have an array of objects, it will only save the LAST value not an array of values
+                #If the property should NOT have an array of objects, it will only save the LAST value not an array of values
                 for noArrayKey in keysWithNoArray: #keysWithNoArray defined at top
                     if key == noArrayKey:
                         lastValueElement = arrayValueElements[len(arrayValueElements) - 1] #Will only save the last value
@@ -811,12 +813,16 @@ if runScript: #runScript is set false if one of the parameters is bad
         for row in rows:
             processRow(row, ship)
 
-        #All Information Scraped. Save information
+        # All Information Scraped. Save information
 
-        #Save to MongoDatabase
+        # Save to MongoDatabase
         boatDatabase.protectedInsertShip(ship)
-        #Appends the ship to the list of ships
+        # Generate edges
+        databaseCompare = DatabaseCompare(ship)
+        databaseCompare.writeEdgesToDatabase()
+        databaseCompare.closeDatabases()
+        # Appends the ship to the list of ships
         ships.append(ship)
-        #Increment ship counter
+        # Increment ship counter
         shipCounter+=1
     print(json.dumps(ships))

@@ -1,6 +1,6 @@
 import json
 import sys
-sys.path.insert(0, "../..")
+sys.path.insert(0, "A:\DevenirProjectsA")
 from ABoatScraping.ABoatDatabase import BoatDatabase
 from ABoatScraping.ship_compare.edge_database import EdgeDatabase
 from ABoatScraping.ship_compare.ship_compare import ShipCompare
@@ -17,15 +17,6 @@ class DatabaseCompare(object):
         otherShips = self.boatDatabase.findShips(queryFilter)
         self.compareToArrayOfShips(otherShips)
 
-    def compareToArrayOfShips(self, ships):
-        for ship in ships:
-            self.compareShips(ship)
-
-    def compareShips(self, otherShip):
-        comparison = ShipCompare(self.ship, otherShip)
-        if comparison.edge.magnitude > 0:
-            self.addEdge(comparison.edge)
-
     def addEdge(self, edge): # if the edge already exists (same target and source combination), it will increment the magnitude of the edge. else it will create the edge
         """
         reasons should an array of strings
@@ -36,6 +27,19 @@ class DatabaseCompare(object):
             existingEdge.incrementMagnitude(edge.magnitude, edge.reasons)
         else:
             self.edges[edge.id] = edge
+
+    def closeDatabases (self):
+        self.boatDatabase.closeConnection()
+        self.edgeDatabase.closeConnection()
+
+    def compareToArrayOfShips(self, ships):
+        for ship in ships:
+            self.compareShips(ship)
+
+    def compareShips(self, otherShip):
+        comparison = ShipCompare(self.ship, otherShip)
+        if comparison.edge.magnitude > 0:
+            self.addEdge(comparison.edge)
 
     def getSerializableEdgesBetweenShips(self):
         """ Returns the seraliazed edges between ships in array. Each object of the array is an Edge object"""
@@ -49,7 +53,7 @@ class DatabaseCompare(object):
         """
         serializableEdges = self.getSerializableEdgesBetweenShips()
         self.edgeDatabase.protectedInsertEdges(serializableEdges)
-
+"""
 # Test script
 boatDatabase = BoatDatabase("localhost", 27017)
 filter = {"scrapeURL": "https://en.wikipedia.org/wiki/German_battleship_Scharnhorst"}
@@ -57,3 +61,4 @@ ship_one = boatDatabase.findShips(filter)[0]
 databaseCompare = DatabaseCompare(ship_one)
 databaseCompare.writeEdgesToDatabase() # writes the edges to database
 print(json.dumps(databaseCompare.getSerializableEdgesBetweenShips()))
+"""

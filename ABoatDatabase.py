@@ -11,6 +11,12 @@ class BoatDatabase(object):
         self.database = self.client.ABoat
         self.shipsCollection = self.database.ships
 
+    def closeConnection(self):
+        self.client.close()
+
+    def deleteShips (self, filter):
+        return self.shipsCollection.delete_many(filter)
+
     def insertSingleShip(self, ship):
         """
         ship - Must be a dictionary. ShipURL must be unique

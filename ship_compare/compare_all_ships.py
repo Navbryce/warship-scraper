@@ -1,5 +1,5 @@
 import sys
-sys.path.insert(0, "../..")
+sys.path.insert(0, "A:\DevenirProjectsA")
 from ABoatScraping.ABoatDatabase import BoatDatabase
 from ABoatScraping.ship_compare.compare_ship_to_database import DatabaseCompare
 
@@ -17,3 +17,4 @@ for ship in allShips:
     for efficiency sake."""
     compareToDatabase = DatabaseCompare(ship)
     compareToDatabase.writeEdgesToDatabase() # Writes the edges to the database
+    compareToDatabase.closeDatabases()
