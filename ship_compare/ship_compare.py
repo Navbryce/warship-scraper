@@ -48,10 +48,10 @@ class ShipCompare(object):
         """compares type and class"""
         if self.doShipsHaveKey("type"):
             if self.shipOne["type"] == self.shipTwo["type"]:
-                self.addEdge(1, "Ships are both of type, " + self.shipOne["type"])
+                self.addEdge(1, ["Ships are both of type, " + self.shipOne["type"]])
         if self.doShipsHaveKey("class"):
             if self.shipOne["class"] == self.shipTwo["class"]:
-                self.addEdge(1, "Boths ships are of the same class, " + self.shipOne["class"])
+                self.addEdge(1, ["Boths ships are of the same class, " + self.shipOne["class"]])
 
     # Compare functions
     def compareDate(self, date_one_object, date_two_obect):
