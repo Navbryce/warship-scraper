@@ -9,8 +9,9 @@ from ABoatScraping.ship_compare.edge_database import EdgeDatabase
 def getDistancesFromNode(scrapeURL, nodes, max_magnitude, edge_database): # I keep switching between using camel case and underlines. I need to pick one
     """
         returns an array with the distances from the node submitted as an argument to all other nodes
-        scrapeURL represents the scrapeURL of the node being observed
-        max_magnitude represents the strong possible connection. Since weight represents cost in the alogirithim, weight is determined by magnitude 1 - (connection strength)/max_magnitude
+        scrapeURL: represents the scrapeURL of the node being observed
+        nodes: Aray of scrapeURL's
+        max_magnitude: represents the strong possible connection. Since weight represents cost in the alogirithim, weight is determined by magnitude 1 - (connection strength)/max_magnitude
     """
     max_magnitude = float(max_magnitude)
 
@@ -43,27 +44,6 @@ def getDistancesFromNode(scrapeURL, nodes, max_magnitude, edge_database): # I ke
                 distances[scrapeURL] = possiblePath
     return distances
 
-def getMinimumDistance(nodesArray, dictWithDistances):
-    """Returns the INDEX where the node with the smallest distance is in the nodesArray. Will return None if array is empty"""
-    minimum = -1
-    minimumIndex = None
-
-    indexCounter = 0
-    while indexCounter < len(nodesArray):
-        scrapeURL = nodesArray[indexCounter]
-        if (minimum == -1 or dictWithDistances[scrapeURL] < minimum):
-            minimum = dictWithDistances[scrapeURL]
-            minimumIndex = indexCounter
-        indexCounter += 1
-    return minimumIndex
-
-def convertDistancesDictionary(distances):
-    """Converts distances dictionary into a sorted array. The shorter the path, the stronger the connection"""
-    distancesArray = []
-    for scrapeURL, distance in distances.items():
-        addDistanceBinary(scrapeURL, distance, 0, len(distancesArray) - 1, distancesArray)
-    return distancesArray
-
 def addDistanceBinary (scrapeURL, distance, minIndex, maxIndex, arrayOfDict):
     """Adds a distanceDict through binary search/add and recursion"""
     distanceDict = {
@@ -90,16 +70,60 @@ def addDistanceBinary (scrapeURL, distance, minIndex, maxIndex, arrayOfDict):
 
         addDistanceBinary(scrapeURL, distance, minIndex, maxIndex, arrayOfDict)
 
+def convertDistancesDictionary(distances):
+    """Converts distances dictionary into a sorted array. The shorter the path, the stronger the connection"""
+    distancesArray = []
+    for scrapeURL, distance in distances.items():
+        addDistanceBinary(scrapeURL, distance, 0, len(distancesArray) - 1, distancesArray)
+    return distancesArray
+
+def getDistancesAndWriteToDatabase(scrapeURL, boatDatabase, edgeDatabase, max_magnitude):
+    """
+    finds distances and writes them to the document in the ships collection
+    scrapeURL - the scrapeURL that you're trying to get the distances for
+    the maximum magnitude of an edge. the stronger the magnitude, the more closely related. See the getDistancesFromNode doc string for more info
+    """
+    allShipsURLS = []
+    shipBeingStudied = None
+    for ship in boatDatabase.findShips({}):
+        if scrapeURL == ship["scrapeURL"]:
+            shipBeingStudied = ship
+        allShipsURLS.append(ship["scrapeURL"])
+    distancesDict = getDistancesFromNode(scrapeURL, allShipsURLS, max_magnitude, edgeDatabase)
+    del distancesDict[scrapeURL] # remove the actual ship from the distances dictionary because the distance will inherently be zero. no reason to store it in the database
+    distancesArray = convertDistancesDictionary(distancesDict)
+    writeDistancesDictionaryToDatabase(shipBeingStudied, distancesArray, boatDatabase)
+
+def getMinimumDistance(nodesArray, dictWithDistances):
+    """Returns the INDEX where the node with the smallest distance is in the nodesArray. Will return None if array is empty"""
+    minimum = -1
+    minimumIndex = None
+
+    indexCounter = 0
+    while indexCounter < len(nodesArray):
+        scrapeURL = nodesArray[indexCounter]
+        if (minimum == -1 or dictWithDistances[scrapeURL] < minimum):
+            minimum = dictWithDistances[scrapeURL]
+            minimumIndex = indexCounter
+        indexCounter += 1
+    return minimumIndex
+
+def writeDistancesDictionaryToDatabase(ship, distancesArray, boatDatabase):
+    """
+    ship - ship dictionary
+    distancesArray - Array of distance objects
+    boatDatabase - boatDatabase instance
+    """
+    ship["distances"] = distancesArray
+    boatDatabase.updateShip(ship)
+
+
 
 # TEST SCRIPT
+"""
 boatDatabase = BoatDatabase("localhost", 27017)
 edgeDatabase = EdgeDatabase("localhost", 27017)
 shipToFindPaths = "https://en.wikipedia.org/wiki/German_battleship_Scharnhorst"
 maximumMagnitude = 13
-
-nodes = []
-for boat in boatDatabase.findShips({}):
-    nodes.append(boat["scrapeURL"])
-boatDatabase.closeConnection()
-distances = getDistancesFromNode(shipToFindPaths, nodes, maximumMagnitude, edgeDatabase)
-print("Distances", json.dumps(convertDistancesDictionary(distances)))
+getDistancesAndWriteToDatabase(shipToFindPaths, boatDatabase, edgeDatabase, maximumMagnitude)
+"""

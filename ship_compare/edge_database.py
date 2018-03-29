@@ -14,8 +14,35 @@ class EdgeDatabase(object):
     def closeConnection(self):
         self.client.close()
 
-    def deleteEdges (self, filter):
+    def deleteEdges(self, filter):
         return self.edgesCollection.delete_many(filter)
+
+    def getNeighbors(self, scrapeURL):
+        """returns an array of neighbor dictionaries that are neighbors to the scrapeURL node. a neighbor dictionary contains a magnitude and scrapeURL"""
+        filter = {
+            "$or": [
+                {
+                    "target": scrapeURL
+                },
+                {
+                    "source": scrapeURL
+                }
+            ]
+        }
+        edges = self.findEdges(filter)
+
+        neighbors = []
+        for edge in edges:
+            if edge["source"] != scrapeURL:
+                neighborURL = edge["source"]
+            else:
+                neighborURL = edge["target"]
+            neighbor = {
+                "scrapeURL": neighborURL,
+                "magnitude": edge["magnitude"]
+            }
+            neighbors.append(neighbor)
+        return neighbors
 
     def insertSingleEdge(self, edge):
         """

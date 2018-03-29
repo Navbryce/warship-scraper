@@ -17,6 +17,13 @@ class BoatDatabase(object):
     def deleteShips (self, filter):
         return self.shipsCollection.delete_many(filter)
 
+    def findShips(self, filterDictionary):
+        """
+        Will return an array of ships dictionaries that match the filter.
+        filterDictionary - See MongoDB "find filters" for more information on filters
+        """
+        return self.shipsCollection.find(filterDictionary)
+
     def insertSingleShip(self, ship):
         """
         ship - Must be a dictionary. ShipURL must be unique
@@ -53,9 +60,7 @@ class BoatDatabase(object):
             insertedObjectIds.append(self.protectedInsertShip(ship))
         return insertedObjectIds
 
-    def findShips(self, filterDictionary):
-        """
-        Will return an array of ships dictionaries that match the filter.
-        filterDictionary - See MongoDB "find filters" for more information on filters
-        """
-        return self.shipsCollection.find(filterDictionary)
+    def updateShip(self, ship):
+        """Will update an existing document that has the same scrapeURL with the ship dictionary. If the document doesn't exist
+        it will create the document"""
+        self.shipsCollection.update_one({"scrapeURL": ship["scrapeURL"]}, {"$set": ship}, upsert=True)
