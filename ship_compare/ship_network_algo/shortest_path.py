@@ -24,12 +24,14 @@ def getDistancesFromNode(scrapeURL, nodes, max_magnitude, edge_database): # I ke
             distances[node] = math.inf
         nodesToFindPathsFor.append(node)
 
-
     while len(nodesToFindPathsFor) > 0:
         nodeWithSmallestDistanceIndex = getMinimumDistance(nodesToFindPathsFor, distances) # assumes this distance must be correct
         smallestScrapeURL = nodesToFindPathsFor[nodeWithSmallestDistanceIndex]
+        # print(smallestScrapeURL + " with a magnitude of ", distances[smallestScrapeURL])
+
         nodesToFindPathsFor.pop(nodeWithSmallestDistanceIndex) # removes it from the array of finding paths for
-        nodeNeighbors = edge_database.getNeighbors(scrapeURL)
+        nodeNeighbors = edge_database.getNeighbors(smallestScrapeURL)
+
         for neighbor in nodeNeighbors:
             # see function definition to understand
             scrapeURL = neighbor["scrapeURL"]
@@ -38,6 +40,7 @@ def getDistancesFromNode(scrapeURL, nodes, max_magnitude, edge_database): # I ke
             if distance < 0:
                 distance = 0 # if the magnitude is greater than the magnitude (which it shouldn't be), treat it as 0
                 print ("A magnitude for %s is greater than the max magnitude, so it the distance will be treated as 0"%(scrapeURL))
+
             possiblePath = distance + distances[smallestScrapeURL]
 
             if possiblePath < distances[scrapeURL]:
@@ -120,10 +123,10 @@ def writeDistancesDictionaryToDatabase(ship, distancesArray, boatDatabase):
 
 
 # TEST SCRIPT
-"""
+
 boatDatabase = BoatDatabase("localhost", 27017)
 edgeDatabase = EdgeDatabase("localhost", 27017)
-shipToFindPaths = "https://en.wikipedia.org/wiki/German_battleship_Scharnhorst"
+# shipToFindPaths = "https://en.wikipedia.org/wiki/German_battleship_Scharnhorst"
+shipToFindPaths = "https://en.wikipedia.org/wiki/USS_Constitution"
 maximumMagnitude = 13
 getDistancesAndWriteToDatabase(shipToFindPaths, boatDatabase, edgeDatabase, maximumMagnitude)
-"""
