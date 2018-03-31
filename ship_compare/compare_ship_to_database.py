@@ -38,8 +38,8 @@ class DatabaseCompare(object):
 
     def compareShips(self, otherShip):
         comparison = ShipCompare(self.ship, otherShip)
-        if comparison.edge.magnitude > 0:
-            self.addEdge(comparison.edge)
+        self.addEdge(comparison.edge)
+
 
     def getSerializableEdgesBetweenShips(self):
         """ Returns the seraliazed edges between ships in array. Each object of the array is an Edge object"""

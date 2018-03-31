@@ -17,6 +17,7 @@ class ShipCompare(object):
         self.runDateComparisons()
         self.runTypeAndClassComparisons()
         self.runComplementAndPhysicalComparison()
+        self.runArmamentComparisons()
 
 
     def addEdge(self, magnitude, reasons):
@@ -64,6 +65,7 @@ class ShipCompare(object):
                     print(self.shipOne["displayName"] + " does not have a date for " + dateToCheckFor)
                 if not shipTwoHasDate:
                     print(self.shipTwo["displayName"] + " does not have a date for " + dateToCheckFor)
+
     def runTypeAndClassComparisons(self):
         """compares type and class"""
         if self.doShipsHaveKey(["type"]):
@@ -73,9 +75,28 @@ class ShipCompare(object):
             if self.shipOne["class"] == self.shipTwo["class"]:
                 self.addEdge(1, ["Boths ships are of the same class, " + self.shipOne["class"]])
 
+    def runArmamentComparisons(self):
+        """compare armament types"""
+        for keyType, armamentType in self.shipOne["armament"].items():
+            shipOneCalculate = armamentType["sizeCalculate"]
+            shipTwoCalculate = self.shipTwo["armament"][keyType]["sizeCalculate"]
+            if shipOneCalculate["noValues"] and shipTwoCalculate["noValues"]:
+                # do nothing currently
+                nothing = None
+            else:
+                if shipOneCalculate["noValues"] == shipTwoCalculate["noValues"]: # Both ships need to have values. not just one
+                    # Don't give any weight (magnitude) to noValues if the ship have values
+                    shipOneCalculate.pop("noValues")
+                    shipTwoCalculate.pop("noValues")
+                    self.compareDictionaries(shipOneCalculate, shipTwoCalculate, 1, keyType)
+                    # Readd noValues in case the sames instances of these ships are used to be compared to new ships, the noValues key must exist initially
+                    shipOneCalculate["noValues"] = False
+                    shipTwoCalculate["noValues"] = False
+
+
     # Compare functions
     def compareDate(self, date_one_object, date_two_obect):
-        """used to comapre dates"""
+        """used to compare dates"""
         return Calculate.withinRange(date_one_object["year"], date_two_obect["year"], 5) # if they were made within a + 5 year, -5 year range
 
     def compareValue(self, value_one, value_two, unitOne=None, unitTwo=None):
@@ -85,7 +106,18 @@ class ShipCompare(object):
         else:
             print("The two values don't have the same unit")
             return False
-
+    def compareDictionaries(self, dictionaryOne, dictionaryTwo, magnitude, contextPhrase=""):
+        """
+        Assumes the dictionaries have the same keys and each key is associated with the same type
+        magnitude - the magnitude that each key value has if they're equal
+        """
+        for key, value in dictionaryOne.items():
+            if type(value) is dict:
+                numberOfKeysInSubDict = len(value.items())
+                self.compareDictionaries(value, dictionaryTwo[key], magnitude/numberOfKeysInSubDict, contextPhrase)
+            else:
+                if self.compareValue(value, dictionaryTwo[key]):
+                    self.addEdge(magnitude, ["Boths ships are within the tolerance of %s for %s in %s"%(self.tolerance, key, contextPhrase)])
     # Other functions
     def doShipsHaveKey (self, keyArray):
         """checks to see if both ships have key. if both do, returns true"""

@@ -121,7 +121,7 @@ def writeDistancesDictionaryToDatabase(ship, distancesArray, boatDatabase):
     boatDatabase.updateShip(ship)
 
 
-
+"""
 # TEST SCRIPT
 
 boatDatabase = BoatDatabase("localhost", 27017)
@@ -130,3 +130,4 @@ edgeDatabase = EdgeDatabase("localhost", 27017)
 shipToFindPaths = "https://en.wikipedia.org/wiki/USS_Constitution"
 maximumMagnitude = 13
 getDistancesAndWriteToDatabase(shipToFindPaths, boatDatabase, edgeDatabase, maximumMagnitude)
+"""

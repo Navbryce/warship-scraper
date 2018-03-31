@@ -61,6 +61,7 @@ class EdgeDatabase(object):
     def protectedInsertEdge(self, edge):
         """
         edge - Must be a dictionary. edge id does not need to be unique. If not unique, the existing edge will be deleted and the new one will be inserted.
+        edge must also have a magnitude greater than 0
         Returns objectID of inserted edge
         """
         edge = edge.copy() #Copied because the insert method for the Mongo Package adds an "ObjectID" field to the edge that is not JSON serliazable (REMOVE in final version to optimize performance)
@@ -68,7 +69,8 @@ class EdgeDatabase(object):
         existingEdge = self.edgesCollection.find_one(filterDictionary)
         if existingEdge is not None:
             self.edgesCollection.delete_one(filterDictionary) #Deletes the existing edge. There should only be one edge with a matching edgeId at MOST.
-        return self.insertSingleEdge(edge)
+        if edge["magnitude"] > 0:
+            self.insertSingleEdge(edge)
 
     def protectedInsertEdges(self, edges):
         """
