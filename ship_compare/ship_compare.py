@@ -18,6 +18,7 @@ class ShipCompare(object):
         self.runTypeAndClassComparisons()
         self.runComplementAndPhysicalComparison()
         self.runArmamentComparisons()
+        self.runArmorComparisons()
 
 
     def addEdge(self, magnitude, reasons):
@@ -76,7 +77,10 @@ class ShipCompare(object):
                 self.addEdge(1, ["Boths ships are of the same class, " + self.shipOne["class"]])
 
     def runArmamentComparisons(self):
-        """compare armament types"""
+        """
+        compare armaments
+        in the future: have it compare individual weapons
+        """
         for keyType, armamentType in self.shipOne["armament"].items():
             shipOneCalculate = armamentType["sizeCalculate"]
             shipTwoCalculate = self.shipTwo["armament"][keyType]["sizeCalculate"]
@@ -93,6 +97,22 @@ class ShipCompare(object):
                     shipOneCalculate["noValues"] = False
                     shipTwoCalculate["noValues"] = False
 
+    def runArmorComparisons(self):
+        """runs comparisons for armor"""
+        armorOne = self.shipOne["armor"]
+        armorTwo = self.shipTwo["armor"]
+        # if statement makes sure both ships have calculations for armor and the calculations actually have values
+        if self.doDictionariesHaveKey(armorOne, armorTwo, ["calculations"]) and not armorOne["calculations"]["noValues"] and not armorTwo["calculations"]["noValues"]:
+            armorOneCalc = armorOne["calculations"]
+            print(armorOneCalc)
+            armorTwoCalc = armorTwo["calculations"]
+            print(armorTwoCalc)
+            # don't give any weight to having False for novalues, so remove it from the dictionaries that will be compared
+            armorOneCalc.pop("noValues")
+            armorTwoCalc.pop("noValues")
+            self.compareDictionaries(armorOneCalc, armorTwoCalc, 1, "armor")
+            armorOneCalc["noValues"] = False
+            armorTwoCalc["noValues"] = False
 
     # Compare functions
     def compareDate(self, date_one_object, date_two_obect):

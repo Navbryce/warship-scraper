@@ -24,7 +24,15 @@ class Calculate(object):
         returns true if second value is within tolerance of first value
         """
         delta = abs(secondValue - firstValue)
-        return delta/firstValue <= tolerance
+        # ORDER of firstValue and secondValue slightly matters when doing. Probably should be changed to some tyope of comparison where order does NOT matter
+        if firstValue != 0:
+            withinTolerance = delta/firstValue <= tolerance
+        elif secondValue != 0:
+            withinTolerance = delta/secondValue <= tolerance
+        else:
+            withinTolerance = True # they're both zero
+        return withinTolerance
+
     @staticmethod
     def withinRange(firstValue, secondValue, range):
         """
