@@ -3,6 +3,7 @@ from Armament import Armament
 from Armor import Armor
 from lxml import html
 from Date import Date
+import Config
 from UnitConversionTable import UnitConversionTable
 from Calculate import Calculate
 from ABoatDatabase import BoatDatabase
@@ -741,8 +742,7 @@ try:
             with open(sys.argv[2], 'r') as file: #get ships to ingest
                 shipsInput = json.load(file)
 
-        with open(settingsPath, 'r') as file: #If either passing only JSON or two file paths (See help message at bottoms), settings still need to be "read" in
-            ingestSettings = json.load(file)
+        ingestSettings = Config.getConfigFromPath(settingsPath)
 except Exception as exception:
     print("An error occurred with the parameter(s) you entered, so the script will not be run")
     print("Please pass: {settingsPath} {ingestPath} or {ingestJSON}")
