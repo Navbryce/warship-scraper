@@ -4,9 +4,9 @@ from ABoatScraping.ABoatDatabase import BoatDatabase
 from ABoatScraping import Config
 from ABoatScraping.ship_compare.edge_database import EdgeDatabase
 from ABoatScraping.ship_compare.ship_network_algo.shortest_path import getDistancesAndWriteToDatabase
+from ABoatScraping.utilities.get_environment import CONFIG_PATH
 
-settingsPath = "A:/DevenirProjectsA/ABoatScraping/shipSettings.json" #use default settings
-settings = Config.getConfigFromPath(settingsPath)
+settings = Config.getConfigFromPath(CONFIG_PATH)
 databaseIp = settings["dbIp"]
 databasePort = int(settings["dbPort"])
 

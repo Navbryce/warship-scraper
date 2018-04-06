@@ -13,6 +13,8 @@ import requests
 import sys
 import traceback
 import json
+from utilities.get_environment import CONFIG_PATH
+
 
 #Global variables
 global websiteRoot #Assigned in the settings area of the script
@@ -734,7 +736,7 @@ try:
         runScript = False
     else:
         if len(sys.argv) == 2: #Use default settings because JSON is being directly passed. Not JSONfile path. See help message at bottom
-            settingsPath = "A:/DevenirProjectsA/ABoatScraping/shipSettings.json" #use default settings
+            settingsPath = CONFIG_PATH #use default settings
             shipsJSON = sys.argv[1]
             shipsInput = json.loads(shipsJSON) #windows shell removes quotes before sending argument, so sending JSON through windows does not work.
         else:

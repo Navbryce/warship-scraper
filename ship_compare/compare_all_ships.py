@@ -3,10 +3,10 @@ sys.path.insert(0, "A:\DevenirProjectsA")
 from ABoatScraping.ABoatDatabase import BoatDatabase
 from ABoatScraping.ship_compare.compare_ship_to_database import DatabaseCompare
 from ABoatScraping import Config
+from ABoatScraping.utilities.get_environment import CONFIG_PATH
 
 """A script that will compared all edges in the database. will override existing edges"""
-settingsPath = "A:/DevenirProjectsA/ABoatScraping/shipSettings.json" #use default settings
-settings = Config.getConfigFromPath(settingsPath)
+settings = Config.getConfigFromPath(CONFIG_PATH)
 databaseIp = settings["dbIp"]
 databasePort = int(settings["dbPort"])
 boatDatabase = BoatDatabase(databaseIp, databasePort)

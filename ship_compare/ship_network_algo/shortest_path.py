@@ -1,7 +1,7 @@
 import json
 import math
 import sys
-sys.path.insert(0, "A:\DevenirProjectsA")
+# sys.path.insert(0, "A:\DevenirProjectsA")
 from ABoatScraping.ABoatDatabase import BoatDatabase
 from ABoatScraping.ship_compare.edge_database import EdgeDatabase
 
