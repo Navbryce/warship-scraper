@@ -1,8 +1,11 @@
 import sys
 import os
 ship_scraping_path = os.environ.get('SHIP_SCRAPER') # check environment variable. if not set, use a default value
+ship_scraping_path = os.environ.get('SHIP_SCRAPER') # check environment variable. if not set, use a default value
 if ship_scraping_path is None:
-    ship_scraping_path = "A:\DevenirProjectsAb"
+    ship_scraping_path = "A:\DevenirProjects"
+else:
+    ship_scraping_path += '/..'
 sys.path.insert(0, ship_scraping_path)
 from ABoatScraping.ABoatDatabase import BoatDatabase
 from ABoatScraping import Config

@@ -1,14 +1,28 @@
 from pymongo import MongoClient
+from ABoatScraping.utilities.get_environment import CONFIG_PATH
+from ABoatScraping import Config
 
 class BoatDatabase(object):
-    def __init__(self, ip, port):
+    def __init__(self, ip, port, userName = None, password = None, databaseName = None):
         """
         ipString = "ip:port"
         """
+
+        config = Config.getConfigFromPath(CONFIG_PATH)
+        if databaseName is None:
+            databaseName = config["databaseName"]
         self.ip = ip
         self.port = port
         self.client = MongoClient(ip, port)
-        self.database = self.client.ABoat
+        self.database = self.client[databaseName]
+        if userName is None or password is None:
+            userName = config["mUser"]
+            password = config["mPass"]
+            if userName is not None and password is not None:
+                self.database.authenticate(userName, password)
+            elif userName is not None or password is not None:
+                print("Both a username and password must be configured in the config (mUser and mPass) or must be passed as a parameter or NOTHING at all")
+
         self.shipsCollection = self.database.ships
 
     def closeConnection(self):

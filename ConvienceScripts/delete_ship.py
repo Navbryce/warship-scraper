@@ -1,8 +1,21 @@
 import sys
 import traceback
-sys.path.insert(0, "A:\DevenirProjectsA")
+import os
+ship_scraping_path = os.environ.get('SHIP_SCRAPER') # check environment variable. if not set, use a default value
+if ship_scraping_path is None:
+    ship_scraping_path = "A:\DevenirProjects"
+else:
+    ship_scraping_path += '/..'
+sys.path.insert(0, ship_scraping_path)
+
 from ABoatScraping.ABoatDatabase import BoatDatabase
 from ABoatScraping.ship_compare.edge_database import EdgeDatabase
+from ABoatScraping import Config
+from ABoatScraping.utilities.get_environment import CONFIG_PATH
+
+settings = Config.getConfigFromPath(CONFIG_PATH)
+databaseIp = settings["dbIp"]
+databasePort = int(settings["dbPort"])
 
 # GET SETTINGS through parameters passed to script
 runScript = True
@@ -25,7 +38,7 @@ if runScript:
     print("Deleting ship/edges with " + scrapeURL + " as a scrapeURL/target/source")
     shipDatabaseFilter = {"scrapeURL": scrapeURL}
 
-    shipDatabase = BoatDatabase("localhost", 27017)
+    shipDatabase = BoatDatabase(databaseIp, databasePort)
     shipsDeleted = shipDatabase.deleteShips(shipDatabaseFilter)
     print("# of Deleted Ship(s) -- should only be one: ", shipsDeleted.deleted_count)
     shipDatabase.closeConnection()
@@ -35,7 +48,7 @@ if runScript:
         {"source": scrapeURL}
     ]}
 
-    edgesDatabase = EdgeDatabase("localhost", 27017)
+    edgesDatabase = EdgeDatabase(databaseIp, databasePort)
     edgesDeleted = edgesDatabase.deleteEdges(edgesDatabaseFilter)
     print("# of Deleted Edge(s): ", edgesDeleted.deleted_count)
     edgesDatabase.closeConnection()
