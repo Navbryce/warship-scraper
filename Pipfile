@@ -4,8 +4,9 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-pymongo = "3.6.0"
-lxml = "4.1.1"
+pymongo = "*"
+lxml = "*"
+cssselect = "*"
 
 
 [dev-packages]
