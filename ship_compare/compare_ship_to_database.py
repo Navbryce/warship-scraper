@@ -1,16 +1,28 @@
 import json
+import os
 import sys
-sys.path.insert(0, "A:\DevenirProjectsA")
+ship_scraping_path = os.environ.get('SHIP_SCRAPER') # check environment variable. if not set, use a default value
+if ship_scraping_path is None:
+    ship_scraping_path = "A:\DevenirProjects"
+else:
+    ship_scraping_path += '/..'
+sys.path.insert(0, ship_scraping_path)
 from ABoatScraping.ABoatDatabase import BoatDatabase
 from ABoatScraping.ship_compare.edge_database import EdgeDatabase
 from ABoatScraping.ship_compare.ship_compare import ShipCompare
+from ABoatScraping.utilities.get_environment import CONFIG_PATH
+from ABoatScraping import Config
 
 class DatabaseCompare(object):
     def __init__ (self, ship):
+        configDictionary = Config.getConfigFromPath(CONFIG_PATH)
+        databaseIP = configDictionary["dbIp"]
+        databasePort = configDictionary["dbPort"]
+        # print("Using %s:%s"%(databaseIP, databasePort))
         self.ship = ship
         self.edges = {} # A dictionary where each property is an edge + "+" + source combination
-        self.boatDatabase = BoatDatabase("localhost", 27017)
-        self.edgeDatabase = EdgeDatabase("localhost", 27017)
+        self.boatDatabase = BoatDatabase(databaseIP, databasePort)
+        self.edgeDatabase = EdgeDatabase(databaseIP, databasePort)
         queryFilter = {"scrapeURL": { # get all ships other than the ship
             "$ne": ship["scrapeURL"]
         }}

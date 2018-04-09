@@ -15,13 +15,15 @@ import Config
 from UnitConversionTable import UnitConversionTable
 from Calculate import Calculate
 from ABoatDatabase import BoatDatabase
-from ship_compare.compare_ship_to_database import DatabaseCompare
 from unidecode import unidecode
 import requests
 import sys
 import traceback
 import json
+from ship_compare.compare_ship_to_database import DatabaseCompare
+from ship_compare.ship_network_algo.run_algos_on_network import run_algos
 from utilities.get_environment import CONFIG_PATH
+
 
 
 #Global variables
@@ -835,4 +837,7 @@ if runScript: #runScript is set false if one of the parameters is bad
         ships.append(ship)
         # Increment ship counter
         shipCounter+=1
+    # After all the edges have been drawn between the ships, calculate the shortest paths
+    run_algos()
+
     print(json.dumps(ships))
