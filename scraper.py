@@ -340,6 +340,7 @@ def processArmament(armamentElement, armamentString, arrayOfWords, armamentTypeO
 
     # tries to get the name without the link if there are no links
     arrayOfName = getArrayOfWords(armamentString, "x", -1)
+    print("ARMAMENT: ", arrayOfName, " FULL", armamentString)
     # Gets quantity info
     quantityBeforeConversion = parseIntFromStringArray(arrayOfWords, 0)
     quantity = conversionTable.convertUnit(quantityBeforeConversion, "word", arrayOfName[1]) # If double, triple are the first words, will multiply the quantity by the appropriate multiplier. If it's some other word (or number), it will just return the original value
@@ -588,12 +589,13 @@ def processArmamentElements(armamentElements, configurationToKeep):
     for arrayValueElement in armamentElements:
         armamentFormattedString = formatString(arrayValueElement.text_content())
         arrayOfWords = getArrayOfWords(armamentFormattedString, None, -1)
-        isDate = len(arrayOfWords) < 3
+        isDate = len(arrayOfWords) <= 3
         if isDate == False and armamentElementCounter == 0: #The first "value" is not a configuration year, so it must only have one configuration
             oneConfiguration = True
         if isDate:
             configurationCounter += 1
-            if configurationCounter > configurationToKeep:
+            if configurationCounter > configurationToKeep or len(values) > 0: # Stop adding armaments if you've encountered another date past your configuration OR you've added armaments and have encountered a date
+                # if values.length> 0 - probably means was scraping first configuration (0th) and the first configuration did not have a "date header"
                 break
         elif (configurationCounter == configurationToKeep) or (oneConfiguration):
             if armamentFormattedString.find("removed") == -1: # Some times armaments are listed when they are removed. Ensures the armament wasn't removed
