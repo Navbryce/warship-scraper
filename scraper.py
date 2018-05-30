@@ -248,7 +248,7 @@ def getImages(pageElement, maxImages): #Page element = DOM element that is a par
     return imageObjArray
 def formatShipName(shipName):
     """Formats a ship name if one is not provided in the scraper parameters"""
-    wordsToFilter = ["hms", "uss", "battleship", "german", "japanese", "italian", "american", "ijn", "(", "sms", "cruiser"] #in lower case. shipName will be converted to lower case for comparison
+    wordsToFilter = ["hms", "uss", "battleship", "german", "french", "japanese", "italian", "american", "ijn", "(", "sms", "cruiser"] #in lower case. shipName will be converted to lower case for comparison
 
     shipWords = getArrayOfWords(shipName, None, -1)
     if len(shipWords) > 1: #Some ship names might be more than one word. This just filters out the names that are already fine
