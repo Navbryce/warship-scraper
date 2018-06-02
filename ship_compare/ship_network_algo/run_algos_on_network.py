@@ -20,7 +20,7 @@ def run_algos():
     # Run this script to run important algos on the entire network, such as distance algo
 
     # Shortest path algo. Function will automatically write distances to ship collection under "distances" property
-    maximum_magnitude = 35 # maximum edge magnitude.the strongest possible connection strength. Does NOT represent cost or distance. Cost or distance is: 1 - (maginitude/maximumMagnitude)
+    maximum_magnitude = 50 # maximum edge magnitude.the strongest possible connection strength. Does NOT represent cost or distance. Cost or distance is: 1 - (maginitude/maximumMagnitude)
     boatDatabase = BoatDatabase(databaseIp, databasePort)
     edgeDatabase = EdgeDatabase(databaseIp, databasePort)
     # PARELLIZE the code below. run a new thread for each ship

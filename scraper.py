@@ -18,6 +18,7 @@ from ABoatDatabase import BoatDatabase
 from unidecode import unidecode
 import requests
 import sys
+from sys import exit
 import traceback
 import json
 from ship_compare.compare_ship_to_database import DatabaseCompare
@@ -833,6 +834,7 @@ if runScript: #runScript is set false if one of the parameters is bad
         boatDatabase.protectedInsertShip(ship)
         # Generate edges
         databaseCompare = DatabaseCompare(ship)
+        print(databaseCompare.getSerializableEdgesBetweenShips())
         databaseCompare.writeEdgesToDatabase()
         databaseCompare.closeDatabases()
         # Appends the ship to the list of ships
@@ -841,5 +843,5 @@ if runScript: #runScript is set false if one of the parameters is bad
         shipCounter+=1
     # After all the edges have been drawn between the ships, calculate the shortest paths
     run_algos()
-
+    exit(0)
     print(json.dumps(ships))

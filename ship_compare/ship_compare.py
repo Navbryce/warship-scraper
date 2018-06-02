@@ -44,9 +44,12 @@ class ShipCompare(object):
                 try:
                     if self.compareValue(shipOneAttrib["value"], shipTwoAttrib["value"], shipOneAttrib["unit"], shipTwoAttrib["unit"]):
                         self.addEdge(1, ["The ships are within tolerance, %s, for %s"%(self.tolerance, property)])
-                except Exception as exception:
-                    print(self.shipOne["displayName"] + ": ", shipOneAttrib)
-                    print(self.shipTwo["displayName"] + ": ", shipTwoAttrib)
+                except:
+                    try:
+                        print(self.shipOne["displayName"] + ": ", shipOneAttrib)
+                        print(self.shipTwo["displayName"] + ": ", shipTwoAttrib)
+                    except: # for some reason, one of the ships display name is throwing an error ONLY for when nodejs spawns the child process
+                        print("An error occurred while trying to print the values for the ships for property %s)"%(property))
 
 
     def runDateComparisons(self):
