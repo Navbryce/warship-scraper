@@ -515,17 +515,18 @@ def processStandardValue(valueString):
         Else, it will just return the valueString
     """
     print(valueString)
+    valueString = valueString.lower(); # Make the string lowercase
     oddCharacters = ["(", ")"]
     replaceWithSpaceCharacters = ["[", "]"]
-    unitsToSearchFor = ["km", "nmi", "kn", "knots", "m", "ft", "t", "long tons", "tons", "kW", "in", "inch"] # Range units prioritized first because some ranges have speeds associated with them (we don't want to pull the speed value)
+    unitsToSearchFor = ["km", "nmi", "miles", "kn", "knots", "m", "meters", "ft", "feet", "t", "long tons", "tons", "kw", "in", "inch"] # Range units prioritized first because some ranges have speeds associated with them (we don't want to pull the speed value)
 
-    returnValue = valueString #Will return the valueString if no units are found
+    returnValue = valueString # Will return the valueString if no units are found
 
     searchString = removeOddCharacters(valueString, oddCharacters) #Removes parentheses because some units are surrounded by them
     searchString = replaceOddCharacters(searchString, replaceWithSpaceCharacters, ' ')
     for unit in unitsToSearchFor:
         wordsBeforeUnit = getWordsBeforeUnit(searchString, unit, 1) #Returns an array of words before the unit of at most size 1. Note: units must be surrounded by spaces
-        if len(wordsBeforeUnit) == 1: #If true, the string contains the unit
+        if len(wordsBeforeUnit) == 1: # If true, the string contains the unit
             value = isWordFloat(wordsBeforeUnit[0])
             if value is None: # if it can't be processed as a float
                 value = wordsBeforeUnit[0]
