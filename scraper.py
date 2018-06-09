@@ -24,6 +24,7 @@ import json
 from ship_compare.compare_ship_to_database import DatabaseCompare
 from ship_compare.ship_network_algo.run_algos_on_network import run_algos
 from utilities.get_environment import CONFIG_PATH
+from utilities.get_environment import RECOMMENDED_UNITS
 
 
 
@@ -31,6 +32,8 @@ from utilities.get_environment import CONFIG_PATH
 global websiteRoot #Assigned in the settings area of the script
 global conversionTable #ConversionTable
 
+def error (message) :
+    print("ERROR: " + message)
 
 def normalizeString(string, removeNewLines):
     if removeNewLines:
@@ -301,7 +304,7 @@ def createDateObject(dateString):
             try:
                 dateObject = Date.strptime(dateString, "%Y")
             except:
-                print("A date object could not be created from the string: " + dateString)
+                print("ERROR: A date object could not be created from the string: " + dateString)
                 dateObject = None
 
     return dateObject
@@ -341,7 +344,7 @@ def processArmament(armamentElement, armamentString, arrayOfWords, armamentTypeO
 
     # tries to get the name without the link if there are no links
     arrayOfName = getArrayOfWords(armamentString, "x", -1)
-    print("ARMAMENT: ", arrayOfName, " FULL", armamentString)
+    #print("ARMAMENT: ", arrayOfName, " FULL", armamentString)
     # Gets quantity info
     quantityBeforeConversion = parseIntFromStringArray(arrayOfWords, 0)
     quantity = conversionTable.convertUnit(quantityBeforeConversion, "word", arrayOfName[1]) # If double, triple are the first words, will multiply the quantity by the appropriate multiplier. If it's some other word (or number), it will just return the original value
@@ -514,7 +517,7 @@ def processStandardValue(valueString):
         Looks for certain units. If the value contains a unit will return a dictionary with the unit and value keys.
         Else, it will just return the valueString
     """
-    print(valueString)
+    # print(valueString)
     valueString = valueString.lower(); # Make the string lowercase
     oddCharacters = ["(", ")"]
     replaceWithSpaceCharacters = ["[", "]"]
@@ -534,6 +537,7 @@ def processStandardValue(valueString):
                 "value": value,
                 "unit": unit
             }
+            # print(returnValue)
             break
     return returnValue
 
@@ -566,6 +570,22 @@ def calculateComplement(valueString, ship):
                     currentComplementValue += possibleNumber
 
         ship['complement'] = currentComplementValue
+
+def convert_value_object (key, value_object):
+    """converts to the recommended unit or default unit (depending on what is configured)"""
+    # convert physical attribute to the preferred unit for the physical attribute
+    if key in RECOMMENDED_UNITS: # if a unit exists for the physical attribute (key should be the name version of the physical attribute (speed, beam...))
+        preferred_unit = RECOMMENDED_UNITS[key]
+        converted_value = conversionTable.convertUnit(value_object["value"], value_object["unit"], preferred_unit)
+        if converted_value is not None: # presumably this if statement is unnecessary. If configured correctly, the recommended unit DEFINITELY should be in the conversion dictioanry
+            value_object["value"] = converted_value
+            value_object["unit"] = preferred_unit
+        else:
+            print("ERROR: Converting %s to %s failed"%(value_object["unit"], preferred_unit))
+    else:
+        print("ERROR: A recommended unit could not be found for physical attribute %s"%(key))
+    return value_object
+
 
 def processArmamentElements(armamentElements, configurationToKeep):
     values = []
@@ -641,7 +661,10 @@ def categorizeElement(key, value, valueElement, ship): #Will categorize elements
 
     #Add element to category. Perform necessary operations
     if physicalAttribute:
-        ship["physicalAttributes"][key] = processStandardValue(value) #ship["physicalAttributes"] object defined at ship construction
+        valueObject = processStandardValue(value)
+        valueObject = convert_value_object(key, valueObject)
+
+        ship["physicalAttributes"][key] = valueObject #ship["physicalAttributes"] object defined at ship construction
     elif importantDate:
         date = createDateObject(value)
         if date is not None:
@@ -833,11 +856,16 @@ if runScript: #runScript is set false if one of the parameters is bad
 
         # Save to MongoDatabase
         boatDatabase.protectedInsertShip(ship)
+        #print notify
+        print("----SCRAPER COMPLETE----")
+        print("Calculating edges and relatedness...")
+
         # Generate edges
         databaseCompare = DatabaseCompare(ship)
-        print(databaseCompare.getSerializableEdgesBetweenShips())
+        #print(databaseCompare.getSerializableEdgesBetweenShips())
         databaseCompare.writeEdgesToDatabase()
         databaseCompare.closeDatabases()
+
         # Appends the ship to the list of ships
         ships.append(ship)
         # Increment ship counter
