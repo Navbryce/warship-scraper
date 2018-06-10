@@ -84,6 +84,23 @@ def isWordFloat(word):
         value = None
     return value
 
+def process_range (range_string):
+    """
+    rangeString -- should ONLY be the range string (no spaces or other words)
+    will return None if not a range
+    will return Average if range
+    """
+    possible_number = None
+    rangeIndex = range_string.find("-")
+    if rangeIndex > 0: # if a dash exists to represent a range of numbers, it would make no sense to be at the first character in the string so > 0 (or it might not even be in the string)
+        firstValue = isWordFloat(range_string[0:rangeIndex])
+        secondValue = isWordFloat(range_string[rangeIndex + 1:])
+        #print("First value, %s, and second value, %s."%(firstValue, secondValue))
+        if firstValue is not None and secondValue is not None: # If it is a range, find the average. Treat that like the complement number
+            averageObject = Calculate([firstValue, secondValue])
+            possible_number = averageObject.calculateAverage()
+    return possible_number
+
 def parseIntFromStringArray(haystackArray, intToKeep):
     intCounter = -1
     """
@@ -304,7 +321,7 @@ def createDateObject(dateString):
             try:
                 dateObject = Date.strptime(dateString, "%Y")
             except:
-                print("ERROR: A date object could not be created from the string: " + dateString)
+                error("A date object could not be created from the string: " + dateString)
                 dateObject = None
 
     return dateObject
@@ -356,7 +373,8 @@ def processArmament(armamentElement, armamentString, arrayOfWords, armamentTypeO
 
 
     if quantity is None:# Should only be called if an error occurs. For example: New York and torpedo tubes
-        print("Error - Source: " + arrayOfWords + "\nName: " +armamentFullName, "with quantity", quantity)
+        error_string = "Source: " + arrayOfWords + "\nName: " +armamentFullName, "with quantity", quantity
+        error(error_string)
         armament = None;
     else:
         charactersToRemove = ['(', ')']
@@ -519,20 +537,27 @@ def processStandardValue(valueString):
     """
     # print(valueString)
     valueString = valueString.lower(); # Make the string lowercase
+
+    returnValue = valueString # Will return the valueString if no units are found
+
     oddCharacters = ["(", ")"]
     replaceWithSpaceCharacters = ["[", "]"]
     unitsToSearchFor = ["km", "nmi", "miles", "kn", "knots", "m", "meters", "ft", "feet", "t", "long tons", "tons", "kw", "in", "inch"] # Range units prioritized first because some ranges have speeds associated with them (we don't want to pull the speed value)
 
-    returnValue = valueString # Will return the valueString if no units are found
 
     searchString = removeOddCharacters(valueString, oddCharacters) #Removes parentheses because some units are surrounded by them
     searchString = replaceOddCharacters(searchString, replaceWithSpaceCharacters, ' ')
     for unit in unitsToSearchFor:
         wordsBeforeUnit = getWordsBeforeUnit(searchString, unit, 1) #Returns an array of words before the unit of at most size 1. Note: units must be surrounded by spaces
         if len(wordsBeforeUnit) == 1: # If true, the string contains the unit
-            value = isWordFloat(wordsBeforeUnit[0])
+            value_word = wordsBeforeUnit[0]
+            value = isWordFloat(value_word)
             if value is None: # if it can't be processed as a float
-                value = wordsBeforeUnit[0]
+                # maybe it's a range?
+                value = process_range(value_word)
+                if value is None: # fallback, don't try to pull out a number.
+                    error("Could not process value %s from %s"%(value_word, valueString))
+                    value = value_word
             returnValue = {
                 "value": value,
                 "unit": unit
@@ -556,18 +581,13 @@ def calculateComplement(valueString, ship):
     if currentComplementValue == 0 or not valueStringContainsOfficersAndEnlisted: # SEE ABOVE. Function calculateCOmplement might be called multiple times if multiple configurations or complement listed as series of strings. If multiple configurations, keep the first
         wordsArray = getArrayOfWords(valueString, None, -1)
         for word in wordsArray:
-            rangeIndex = word.find("-")
-            if rangeIndex > 0: # if a dash exists to represent a range of numbers, it would make no sense to be at the first character in the string so > 0 (or it might not even be in the string)
-                firstValue = isWordInt(word[0:rangeIndex])
-                secondValue = isWordInt(word[rangeIndex + 1:])
-                if firstValue is not None and secondValue is not None: # If it is a range, find the average. Treat that like the complement number
-                    averageObject = Calculate([firstValue, secondValue])
-                    possibleNumber = averageObject.calculateAverage()
-                    currentComplementValue += possibleNumber
-            else:
+            possibleNumber = process_range(word) # maybe it's a range
+            if possibleNumber is None: # if it is not a range, maybe it's a normal number
                 possibleNumber = isWordInt(word)
                 if possibleNumber is not None:
                     currentComplementValue += possibleNumber
+            else:
+                currentComplementValue += possibleNumber
 
         ship['complement'] = currentComplementValue
 
@@ -581,9 +601,9 @@ def convert_value_object (key, value_object):
             value_object["value"] = converted_value
             value_object["unit"] = preferred_unit
         else:
-            print("ERROR: Converting %s to %s failed"%(value_object["unit"], preferred_unit))
+            error("Converting %s to %s failed"%(value_object["unit"], preferred_unit))
     else:
-        print("ERROR: A recommended unit could not be found for physical attribute %s"%(key))
+        error("A recommended unit could not be found for physical attribute %s"%(key))
     return value_object
 
 
@@ -865,6 +885,7 @@ if runScript: #runScript is set false if one of the parameters is bad
         #print(databaseCompare.getSerializableEdgesBetweenShips())
         databaseCompare.writeEdgesToDatabase()
         databaseCompare.closeDatabases()
+
 
         # Appends the ship to the list of ships
         ships.append(ship)
