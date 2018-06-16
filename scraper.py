@@ -32,6 +32,14 @@ from utilities.get_environment import RECOMMENDED_UNITS
 global websiteRoot #Assigned in the settings area of the script
 global conversionTable #ConversionTable
 
+def deleteOpeningSpaces (string):
+    """
+    deletes all the sequential spaces before the first word. returns the string
+    """
+    while (string[0] == " " and len(string) > 1):
+        string = string[1:]
+    return string
+
 def error (message) :
     print("ERROR: " + message)
 
@@ -52,6 +60,7 @@ def replaceColonWithSpace(string):
     oddCharacters = [":"]
     return replaceOddCharacters(string, oddCharacters, " ")
 def formatString(string):
+    string = deleteOpeningSpaces(string)
     oddCharacters = ['\"',':']
     string = normalizeString(string, True)
     return removeOddCharacters(string, oddCharacters)
@@ -527,8 +536,8 @@ def processClassAndType(valueString, ship):
         classOfShip = valueString[0:endOfClassWord]
         type = valueString[endOfClassWord:]
 
-    ship["class"] = classOfShip
-    ship["type"] = type
+    ship["class"] = formatString(classOfShip)
+    ship["type"] = formatString(type)
 
 def processStandardValue(valueString):
     """valueString -- Value string
