@@ -21,6 +21,8 @@ import sys
 from sys import exit
 import traceback
 import json
+
+from Ship import valid_ship
 from ship_compare.compare_ship_to_database import DatabaseCompare
 from ship_compare.ship_network_algo.run_algos_on_network import run_algos
 from utilities.get_environment import CONFIG_PATH
@@ -682,7 +684,7 @@ def categorizeElement(key, value, valueElement, ship): #Will categorize elements
             physicalAttribute = True
             break
 
-    if physicalAttribute == False:
+    if not physicalAttribute:
         for keyWord in importantDateKeyWords: #If else separate from for loop for organizational reasons rather. I didn't want a bunch of nested for loops and if statements
             if key.find(keyWord) >= 0:
                 importantDate = True
@@ -882,22 +884,25 @@ if runScript: #runScript is set false if one of the parameters is bad
             processRow(row, ship)
 
         # All Information Scraped. Save information
+        valid = valid_ship(ship)
+        if (len(valid["missingKeys"]) == 0 and len(valid["wrongType"]) == 0):
+            # Save to MongoDatabase
+            boatDatabase.protectedInsertShip(ship)
+            #print notify
+            print("----SCRAPER COMPLETE----")
+            print("Calculating edges and relatedness...")
 
-        # Save to MongoDatabase
-        boatDatabase.protectedInsertShip(ship)
-        #print notify
-        print("----SCRAPER COMPLETE----")
-        print("Calculating edges and relatedness...")
-
-        # Generate edges
-        databaseCompare = DatabaseCompare(ship)
-        #print(databaseCompare.getSerializableEdgesBetweenShips())
-        databaseCompare.writeEdgesToDatabase()
-        databaseCompare.closeDatabases()
+            # Generate edges
+            databaseCompare = DatabaseCompare(ship)
+            #print(databaseCompare.getSerializableEdgesBetweenShips())
+            databaseCompare.writeEdgesToDatabase()
+            databaseCompare.closeDatabases()
 
 
-        # Appends the ship to the list of ships
-        ships.append(ship)
+            # Appends the ship to the list of ships
+            ships.append(ship)
+        else: # the ship was invalid
+            print(valid)
         # Increment ship counter
         shipCounter+=1
     # After all the edges have been drawn between the ships, calculate the shortest paths
