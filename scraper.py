@@ -27,6 +27,8 @@ from ship_compare.compare_ship_to_database import DatabaseCompare
 from ship_compare.ship_network_algo.run_algos_on_network import run_algos
 from utilities.get_environment import CONFIG_PATH
 from utilities.get_environment import RECOMMENDED_UNITS
+from utilities.text_functions import get_text_paragraph
+
 
 
 
@@ -42,9 +44,24 @@ def deleteOpeningSpaces (string):
         string = string[1:]
     return string
 
-def error (message) :
-    print("ERROR: " + message)
+def error(message):
+    print("ERROR: ", message)
 
+def set_standard_value_key(object, key, new_value):
+    """ call when you are setting the key to a standard value
+        will only keep the new value if no existing element or it actually
+        has a value
+
+        @param object - the object being modified
+        @param key - the key being set
+        @param newValue - the new value
+    """
+    if key in ship:
+        if ("noValues" not in new_value
+        or "noValues" in ship[key]):
+            object[key] = new_value
+    else:
+        object[key] = new_value
 def normalizeString(string, removeNewLines):
     if removeNewLines:
         string = string.replace("\n", " ") #replace new lines with spaces
@@ -699,8 +716,8 @@ def categorizeElement(key, value, valueElement, ship): #Will categorize elements
     if physicalAttribute:
         valueObject = processStandardValue(value)
         valueObject = convert_value_object(key, valueObject)
-
-        ship["physicalAttributes"][key] = valueObject #ship["physicalAttributes"] object defined at ship construction
+        # ship["physicalAttributes"] object defined at ship construction
+        set_standard_value_key(ship["physicalAttributes"], key, valueObject)
     elif importantDate:
         date = createDateObject(value)
         if date is not None:
@@ -712,9 +729,7 @@ def categorizeElement(key, value, valueElement, ship): #Will categorize elements
         processClassAndType(value, ship)
     elif key == "armor" or key == "armour":
         #There's only a single unit of armor AKA there must be none because the key is "armor" meaning there is no type key
-        ship["armor"] = {"armorObjects": [],
-                         "calculations": {}
-                        }
+        armor = None  # line does nothing
     elif key == "armament":
         #There's only one gun
         values = processArmamentElements([valueElement], 0)
@@ -723,7 +738,7 @@ def categorizeElement(key, value, valueElement, ship): #Will categorize elements
         calculateComplement(value, ship)
     else:   #Catch all
         value = processStandardValue(value)
-        if value["noValues"]: # just use the stirng if no value was found when trying to pull unit
+        if "noValues" in value: # just use the string if no value was found when trying to pull unit
             value = value["valueString"]
 
 
@@ -733,10 +748,11 @@ def processRow(rowElement, shipBeingUpdated):
         key = formatString(cellElements[0].text_content()).lower() #format string and convert it to lower case
         valueElement = cellElements[1]
         arrayValueElements = valueElement.cssselect("ul>li")
-        if len(arrayValueElements)==0: #dealing with a single value element aka not an array
+        if len(arrayValueElements) == 0: # dealing with a single value element aka not an array
             categorizeElement(key, formatString(valueElement.text_content()), valueElement, ship) # the object referenced by 'ship' modified in function. thus, no ship returned because reference points to the same object
         else :
-            keysWithNoArray = ["draught", "length", "displacement", "speed"] #Should contain the keys that should NOT have an array of objects. For example, some ships have multiple displacements listed--scraper should only keep one
+            keysWithNoArray = ["draught", "length", "displacement", "speed",
+            "draft", "propulsion", "installed power"] # Should contain the keys that should NOT have an array of objects. For example, some ships have multiple displacements listed--scraper should only keep one
 
             values = []
             addvaluesToShip = True
@@ -763,15 +779,6 @@ def processRow(rowElement, shipBeingUpdated):
                             armorCalculateObject.addValue(armor["maxValue"])
                 values["calculations"] = armorCalculateObject.calculationsDictionary()
 
-
-            elif key == "installed power": #Some ships just have the installed power value listed. Some have a list of items under installed power including the value, boilers, ... This will just keep the actual value
-                for powerElement in arrayValueElements:
-                    value = formatString(powerElement.text_content())
-                    processedValue = processStandardValue(value)
-                    if processedValue != value: #a dictionary was returned meaning it found a unit (kW)
-                        ship[key] = processedValue
-                        addvaluesToShip = False
-                        break #exits the for loop
             elif key == "complement":
                 for complementElement in arrayValueElements:
                     valueString = formatString(complementElement.text_content())
@@ -845,7 +852,6 @@ if runScript: #runScript is set false if one of the parameters is bad
     conversionTable = UnitConversionTable()
     shipCounter = 0
     ships = []
-
     for page in shipPages:
         #Parrellize ?
         #BINARY SEARCH TREES FOR COMMON ATTRIBUTES
@@ -855,8 +861,9 @@ if runScript: #runScript is set false if one of the parameters is bad
         infoBox = tree.cssselect(".infobox")[0]
         content = tree.cssselect("#bodyContent")[0]
         textContent = tree.cssselect("#mw-content-text")[0]
-        firstParagraph = content.cssselect(".mw-parser-output > p")[0]
-        description = formatString(firstParagraph.text_content())
+        paragraphs = content.cssselect(".mw-parser-output p")
+        description = get_text_paragraph(paragraphs, formatString)
+
         oddCharactersInDescription = ["[a]"]
         description = removeOddCharacters(description, oddCharactersInDescription)
         #Scrapes ship name
@@ -874,8 +881,13 @@ if runScript: #runScript is set false if one of the parameters is bad
                 'name': shipName,
                 'importantDates': {},
                 'awards': [],
-                'armament': [],
-                'armor': [],
+                'armament': {},
+                'armor': {
+                    "armorObjects": [],
+                    "calculations": {
+                        "noValues": True
+                    }
+                },
                 'description': description,
                 'physicalAttributes': {}
                 }

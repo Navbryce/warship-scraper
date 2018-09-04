@@ -57,34 +57,6 @@ def get_valid_ship():
        },
        "description":"Scharnhorst was a German capital ship, alternatively described as a battleship and battlecruiser, of Nazi Germany's Kriegsmarine. She was the lead ship of her class, which included one other ship, Gneisenau. The ship was built at the Kriegsmarinewerft dockyard in Wilhelmshaven; she was laid down on 15 June 1935 and launched a year and four months later on 3 October 1936. Completed in January 1939, the ship was armed with a main battery of nine 28 cm (11 in) C/34 guns in three triple turrets.  Plans to replace these weapons with six 38 cm (15 in) SK C/34 guns in twin turrets were never carried out. ",
        "physicalAttributes":{
-          "displacement":{
-             "value":38700.0,
-             "unit":"t"
-          },
-          "length":{
-             "value":234.9,
-             "unit":"m"
-          },
-          "beam":{
-             "value":30.0,
-             "unit":"m"
-          },
-          "draft":{
-             "value":9.9,
-             "unit":"m"
-          },
-          "installed power":{
-             "value":118977.0,
-             "unit":"kw"
-          },
-          "speed":{
-             "value":31.0,
-             "unit":"kn"
-          },
-          "range":{
-             "value":7100.0,
-             "unit":"nmi"
-          }
        },
        "pictures":[
        ],
