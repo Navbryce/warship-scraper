@@ -88,7 +88,6 @@ def get_valid_ship():
        },
        "pictures":[
        ],
-       "namesake":" gerhard johann von scharnhorst (1755-1813)[1]",
        "class":"scharnhorst-class",
        "type":"battleship",
        "complement":1669.0,

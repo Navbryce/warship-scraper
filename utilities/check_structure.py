@@ -1,7 +1,7 @@
 
 def check_structure(object, structure, root):
     """
-    ensures the structures are the same
+    ensures the structures are the same. none values are not checked for type
 
     @param object - the object being checked
     @param structure - the actual structure
@@ -18,7 +18,7 @@ def check_structure(object, structure, root):
         if (isinstance(structure_value, float) and
             isinstance(object[key], int)):  # some complements are floats (averaged)
             object[key] = float(object[key])
-        if not isinstance(object[key], type(structure_value)):
+        if not isinstance(structure_value, float) and not isinstance(object[key], type(structure_value)):
             wrong_type.append({
                 "path": path,
                 "actualType": type(object[key]),

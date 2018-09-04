@@ -549,7 +549,12 @@ def processStandardValue(valueString):
     # print(valueString)
     valueString = valueString.lower(); # Make the string lowercase
 
-    returnValue = valueString # Will return the valueString if no units are found
+    returnValue = {  # Will return if no units are found
+        "value": "NA",
+        "unit": "NA",
+        "noValues": True,
+        "valueString": valueString
+    }
 
     oddCharacters = ["(", ")"]
     replaceWithSpaceCharacters = ["[", "]"]
@@ -717,7 +722,10 @@ def categorizeElement(key, value, valueElement, ship): #Will categorize elements
     elif key == "complement":
         calculateComplement(value, ship)
     else:   #Catch all
-        ship[key] = processStandardValue(value)
+        value = processStandardValue(value)
+        if value["noValues"]: # just use the stirng if no value was found when trying to pull unit
+            value = value["valueString"]
+
 
 def processRow(rowElement, shipBeingUpdated):
     cellElements = rowElement.cssselect("td")
@@ -902,7 +910,7 @@ if runScript: #runScript is set false if one of the parameters is bad
             # Appends the ship to the list of ships
             ships.append(ship)
         else: # the ship was invalid
-            print(valid)
+            error(valid)  # if this line executes, then the ship has a missing key or value
         # Increment ship counter
         shipCounter+=1
     # After all the edges have been drawn between the ships, calculate the shortest paths
