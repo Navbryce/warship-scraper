@@ -339,6 +339,14 @@ def getInfoBoxPicture(boxWithPicture):
 
 #Returns a Date object. Assumes the date is in the "day month year" format
 def createDateObject(dateString):
+    """
+    make lower case, remove fiscal year, then strip of leading and trailing
+    spaces. remove any annotation characters
+     """
+
+    dateString = removeOddCharacters(dateString.lower(), [" fiscal year"])
+    dateString = dateString.lstrip()
+    dateString = deleteAnnotations(dateString)
     dateObject = None
     try:
         dateObject = Date.strptime(dateString, "%d %B %Y")
