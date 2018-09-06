@@ -917,8 +917,8 @@ if runScript: #runScript is set false if one of the parameters is bad
             # Save to MongoDatabase
             boatDatabase.protectedInsertShip(ship)
             #print notify
-            print("----SCRAPER COMPLETE----")
-            print("Calculating edges and relatedness...")
+            print("SCRAPER COMPLETE for %s" % (ship["displayName"]))
+            print("Calculating edges and relatedness for %s..." % (ship["displayName"]))
 
             # Generate edges
             databaseCompare = DatabaseCompare(ship)

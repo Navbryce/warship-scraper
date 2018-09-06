@@ -20,6 +20,8 @@ class ShipCompare(object):
         self.runArmamentComparisons()
         self.runArmorComparisons()
 
+    def error(self, msg):
+        print("ERROR: ", msg)
 
     def addEdge(self, magnitude, reasons):
         """
@@ -46,10 +48,12 @@ class ShipCompare(object):
                         self.addEdge(1, ["The ships are within tolerance, %s, for %s"%(self.tolerance, property)])
                 except:
                     try:
-                        print(self.shipOne["displayName"] + ": ", shipOneAttrib)
-                        print(self.shipTwo["displayName"] + ": ", shipTwoAttrib)
+                        error = "{}: {}".format(self.shipOne["displayName"], shipOneAttrib)
+                        self.error(error)
+                        error = "{}: {}".format(self.shipTwo["displayName"] + ": ", shipTwoAttrib)
+                        self.error(error)
                     except: # for some reason, one of the ships display name is throwing an error ONLY for when nodejs spawns the child process
-                        print("An error occurred while trying to print the values for the ships for property %s)"%(property))
+                        self.error("An error occurred while trying to print the values for the ships for property %s)"%(property))
 
 
     def runDateComparisons(self):
@@ -66,9 +70,9 @@ class ShipCompare(object):
                     self.addEdge(1, ["Within tolerances of date for " + dateToCheckFor])
             else:
                 if not shipOneHasDate:
-                    print(self.shipOne["displayName"] + " does not have a date for " + dateToCheckFor)
+                    self.error(self.shipOne["displayName"] + " does not have a date for " + dateToCheckFor)
                 if not shipTwoHasDate:
-                    print(self.shipTwo["displayName"] + " does not have a date for " + dateToCheckFor)
+                    self.error(self.shipTwo["displayName"] + " does not have a date for " + dateToCheckFor)
 
     def runTypeAndClassComparisons(self):
         """compares type and class"""
@@ -107,9 +111,7 @@ class ShipCompare(object):
         # if statement makes sure both ships have calculations for armor and the calculations actually have values
         if self.doDictionariesHaveKey(armorOne, armorTwo, ["calculations"]) and not armorOne["calculations"]["noValues"] and not armorTwo["calculations"]["noValues"]:
             armorOneCalc = armorOne["calculations"]
-            print(armorOneCalc)
             armorTwoCalc = armorTwo["calculations"]
-            print(armorTwoCalc)
             # don't give any weight to having False for novalues, so remove it from the dictionaries that will be compared
             armorOneCalc.pop("noValues")
             armorTwoCalc.pop("noValues")
@@ -156,10 +158,10 @@ class ShipCompare(object):
             hasKey = True
             if key not in object1:
                 hasKey = False
-                print ("The property," + key + ",  is not in " + self.shipOne["displayName"])
+                self.error("The property," + key + ",  is not in " + self.shipOne["displayName"])
             if key not in object2:
                 hasKey = False
-                print ("The property, " + key + ", is not in " + self.shipTwo["displayName"])
+                self.error("The property, " + key + ", is not in " + self.shipTwo["displayName"])
             if hasKey is False:
                 return hasKey
             else:
