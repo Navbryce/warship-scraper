@@ -1,10 +1,5 @@
 {
     "websiteRoot": "https://en.wikipedia.org",
-    "dbIp": "localhost",
-    "dbPort": "27017",
-    "databaseName": "ABoat",
     "maxNumberOfImagesForAShip": 5,
-    "mPass": "",
-    "mUser": "",
     "numberOfImagesForSubsItems": 5
 }

@@ -1,0 +1,19 @@
+{
+  "name": "ships-be",
+  "version": "1.0.0",
+  "description": "Backend for ships site",
+  "main": "Backend.js",
+  "scripts": {
+    "start": "node ./Backend.js"
+  },
+  "author": "Navbryce",
+  "license": "ISC",
+  "dependencies": {
+    "body-parser": "^1.20.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.0.1",
+    "express": "^4.18.1",
+    "moment": "^2.29.3",
+    "mongoose": "^6.4.3"
+  }
+}

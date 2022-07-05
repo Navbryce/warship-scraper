@@ -1,0 +1,20 @@
+
+zpython:S116"WRename this field "edgesCollection" to match the regular expression ^[_a-z][_a-z0-9]*$.(ü®ûøÿÿÿÿ8İÈÔäœ0
+{python:S117"XRename this parameter "databaseName" to match the regular expression ^[_a-z][a-z0-9_]*$.(Öƒ Üüÿÿÿÿ8ŞÈÔäœ0
+wpython:S117"TRename this parameter "userName" to match the regular expression ^[_a-z][a-z0-9_]*$.(Öƒ Üüÿÿÿÿ8ŞÈÔäœ0
+=python:S125"Remove this commented out code.(…Óµ•8ŞÈÔäœ0
+qpython:S100"SRename method "closeConnection" to match the regular expression ^[a-z_][a-z0-9_]*$.(Û¸„¨8ŞÈÔäœ0
+rpython:S100"ORename method "deleteEdges" to match the regular expression ^[a-z_][a-z0-9_]*$.(°˜¿ûÿÿÿÿ8ŞÈÔäœ0
+python:S117("\Rename this local variable "neighborURL" to match the regular expression ^[_a-z][a-z0-9_]*$.(İ¢®–øÿÿÿÿ8ŞÈÔäœ0
+spython:S117"URename this parameter "scrapeURL" to match the regular expression ^[_a-z][a-z0-9_]*$.(‹…íÇ8ŞÈÔäœ0
+npython:S100"PRename method "getNeighbors" to match the regular expression ^[a-z_][a-z0-9_]*$.(‹…íÇ8ŞÈÔäœ0
+Opython:S5806"+Rename this variable; it shadows a builtin.(€•éîøÿÿÿÿ8ŞÈÔäœ0
+wpython:S1002"TRename method "insertSingleEdge" to match the regular expression ^[a-z_][a-z0-9_]*$.(¡ûŠüÿÿÿÿ8ŞÈÔäœ0
+mpython:S1009"ORename method "insertEdges" to match the regular expression ^[a-z_][a-z0-9_]*$.(³èÓ…8ŞÈÔäœ0
+€python:S117H"]Rename this local variable "existingEdge" to match the regular expression ^[_a-z][a-z0-9_]*$.(÷Êš‰şÿÿÿÿ8ŞÈÔäœ0
+python:S117G"aRename this local variable "filterDictionary" to match the regular expression ^[_a-z][a-z0-9_]*$.(Óıß8ŞÈÔäœ0
+tpython:S100@"WRename method "protectedInsertEdge" to match the regular expression ^[a-z_][a-z0-9_]*$.(ƒÁó8ŞÈÔäœ0
+€python:S117S"bRename this local variable "insertedObjectIds" to match the regular expression ^[_a-z][a-z0-9_]*$.(†´²Ø8ŞÈÔäœ0
+{python:S100N"XRename method "protectedInsertEdges" to match the regular expression ^[a-z_][a-z0-9_]*$.(Ë©£ñúÿÿÿÿ8ŞÈÔäœ0
+python:S117X"\Rename this parameter "filterDictionary" to match the regular expression ^[_a-z][a-z0-9_]*$.(¬¤Çùÿÿÿÿ8ŞÈÔäœ0
+ppython:S100X"MRename method "findEdges" to match the regular expression ^[a-z_][a-z0-9_]*$.(¬¤Çùÿÿÿÿ8ŞÈÔäœ0

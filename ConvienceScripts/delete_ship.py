@@ -1,16 +1,9 @@
 import sys
 import traceback
-import os
-ship_scraping_path = os.environ.get('SHIP_SCRAPER') # check environment variable. if not set, use a default value
-if ship_scraping_path is None:
-    ship_scraping_path = "A:\DevenirProjects"
-else:
-    ship_scraping_path += '/..'
-sys.path.insert(0, ship_scraping_path)
 
+from ABoatScraping import Config
 from ABoatScraping.ABoatDatabase import BoatDatabase
 from ABoatScraping.ship_compare.edge_database import EdgeDatabase
-from ABoatScraping import Config
 from ABoatScraping.utilities.get_environment import CONFIG_PATH
 
 settings = Config.getConfigFromPath(CONFIG_PATH)

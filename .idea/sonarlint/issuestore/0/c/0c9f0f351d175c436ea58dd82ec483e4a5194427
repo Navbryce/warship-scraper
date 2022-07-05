@@ -1,0 +1,18 @@
+
+rpython:S116"TRename this field "edgeDatabase" to match the regular expression ^[_a-z][_a-z0-9]*$.(³€ßÈ8•‡Óäœ0
+qpython:S116
+"TRename this field "boatDatabase" to match the regular expression ^[_a-z][_a-z0-9]*$.(«‰Ù|8•‡Óäœ0
+ypython:S117"[Rename this local variable "otherShips" to match the regular expression ^[_a-z][a-z0-9_]*$.(¤Ùžø8•‡Óäœ0
+zpython:S117"\Rename this local variable "queryFilter" to match the regular expression ^[_a-z][a-z0-9_]*$.(ö”›û8•‡Óäœ0
+€python:S117"]Rename this local variable "existingEdge" to match the regular expression ^[_a-z][a-z0-9_]*$.(íºÓµùÿÿÿÿ8•‡Óäœ0
+npython:S100"KRename method "addEdge" to match the regular expression ^[a-z_][a-z0-9_]*$.( ¾„’ûÿÿÿÿ8•‡Óäœ0
+ppython:S100"RRename method "closeDatabases" to match the regular expression ^[a-z_][a-z0-9_]*$.(ü¼Ž½8•‡Óäœ0
+vpython:S100!"YRename method "compareToArrayOfShips" to match the regular expression ^[a-z_][a-z0-9_]*$.(½“Ð28•‡Óäœ0
+spython:S117%"URename this parameter "otherShip" to match the regular expression ^[_a-z][a-z0-9_]*$.(‡ä÷í8•‡Óäœ0
+npython:S100%"PRename method "compareShips" to match the regular expression ^[a-z_][a-z0-9_]*$.(‡ä÷í8•‡Óäœ0
+{python:S117-"XRename this local variable "edgeKey" to match the regular expression ^[_a-z][a-z0-9_]*$.(°ÒáÐÿÿÿÿÿ8•‡Óäœ0
+~python:S117,"`Rename this local variable "serializedEdges" to match the regular expression ^[_a-z][a-z0-9_]*$.(ýð²†8•‡Óäœ0
+‡python:S100*"dRename method "getSerializableEdgesBetweenShips" to match the regular expression ^[a-z_][a-z0-9_]*$.(Ñ­»’ÿÿÿÿÿ8•‡Óäœ0
+€python:S1174"bRename this local variable "serializableEdges" to match the regular expression ^[_a-z][a-z0-9_]*$.(È®‡Ÿ8•‡Óäœ0
+{python:S1000"XRename method "writeEdgesToDatabase" to match the regular expression ^[a-z_][a-z0-9_]*$.(·¡÷×ýÿÿÿÿ8•‡Óäœ0
+=python:S1256"Remove this commented out code.(…Óµ•8•‡Óäœ0

@@ -1,0 +1,17 @@
+
+zpython:S116"WRename this field "shipsCollection" to match the regular expression ^[_a-z][_a-z0-9]*$.(ŒİÎæıÿÿÿÿ8¿Ÿ³äœ0
+{python:S117"XRename this parameter "databaseName" to match the regular expression ^[_a-z][a-z0-9_]*$.(Öƒ Üüÿÿÿÿ8¿Ÿ³äœ0
+wpython:S117"TRename this parameter "userName" to match the regular expression ^[_a-z][a-z0-9_]*$.(Öƒ Üüÿÿÿÿ8¿Ÿ³äœ0
+=python:S125	"Remove this commented out code.(…Óµ•8¿Ÿ³äœ0
+qpython:S100"SRename method "closeConnection" to match the regular expression ^[a-z_][a-z0-9_]*$.(Û¸„¨8¿Ÿ³äœ0
+rpython:S100"ORename method "deleteShips" to match the regular expression ^[a-z_][a-z0-9_]*$.(†‘·şÿÿÿÿ8¿Ÿ³äœ0
+zpython:S117"\Rename this parameter "filterDictionary" to match the regular expression ^[_a-z][a-z0-9_]*$.(şè—…8¿Ÿ³äœ0
+kpython:S100"MRename method "findShips" to match the regular expression ^[a-z_][a-z0-9_]*$.(şè—…8¿Ÿ³äœ0
+wpython:S100!"TRename method "insertSingleShip" to match the regular expression ^[a-z_][a-z0-9_]*$.(ŞİÅ¶ûÿÿÿÿ8¿Ÿ³äœ0
+mpython:S100("ORename method "insertShips" to match the regular expression ^[a-z_][a-z0-9_]*$.(¾‘ÚÍ8¿Ÿ³äœ0
+€python:S1176"]Rename this local variable "existingShip" to match the regular expression ^[_a-z][a-z0-9_]*$.(£›¡ôüÿÿÿÿ8¿Ÿ³äœ0
+python:S1175"aRename this local variable "filterDictionary" to match the regular expression ^[_a-z][a-z0-9_]*$.(¿õ½ñ8¿Ÿ³äœ0
+zpython:S100/"WRename method "protectedInsertShip" to match the regular expression ^[a-z_][a-z0-9_]*$.(÷Í Æüÿÿÿÿ8¿Ÿ³äœ0
+€python:S117@"bRename this local variable "insertedObjectIds" to match the regular expression ^[_a-z][a-z0-9_]*$.(†´²Ø8¿Ÿ³äœ0
+vpython:S100;"XRename method "protectedInsertShips" to match the regular expression ^[a-z_][a-z0-9_]*$.(Ö÷ˆ8¿Ÿ³äœ0
+kpython:S100E"NRename method "updateShip" to match the regular expression ^[a-z_][a-z0-9_]*$.(ùıŒn8¿Ÿ³äœ0
