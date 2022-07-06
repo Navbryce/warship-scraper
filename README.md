@@ -1,5 +1,5 @@
-# Ship Scraper
-Scrapes ship information from Wikipedia. 
+# Warship Scraper
+Scrapes warship information from Wikipedia. 
 Because all the information is user-sourced, most formatting is not consistent Wikipedia-page to page, making the task awkward.
 The scraper also calculates various stats about the ships and a similarity score between all the ships.
 
