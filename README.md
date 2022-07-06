@@ -4,7 +4,7 @@ Because all the information is user-sourced, most formatting is not consistent W
 The scraper also calculates various stats about the ships and a similarity score between all the ships.
 
 # Background
-I coded this app 5 years ago, while I was in high school.
+I coded this app in 2017, while I was in high school.
 As a result, the code is not very idiomatic.
 Around 2020, it stopped working because the database was deleted and the stack was growing unsupported.
 In 2022, I switched to poetry for dependency management, packaged the app in Docker, and allocated a new database on Mongo Atlas, so I could re-deploy it on Heroku.

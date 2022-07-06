@@ -13,6 +13,7 @@ var shipSchema = mongoose.Schema({
   description: String,
   physicalAttributes: Object,
   pictures: Object,
+  complement: Number,
   any: Object // Catch all. Ships are dynamic and don't always have the same attributes
 });
 var Ship = mongoose.model('ships', shipSchema);

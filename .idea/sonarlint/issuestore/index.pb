@@ -43,9 +43,5 @@ N
 ABoatScraping/ABoatDatabase.py,d/c/dce1be09764b37a85d3badf246ce1b7d1682af28
 R
 "Backend/Modules/LogModule/index.js,7/5/75f0be6bd66aa1e1bd7b9017fd8d180efceb14a1
-D
-Backend/package.json,9/4/94ce49d799a3e3367790576c2d12725edc649a5a
-S
-#Backend/Modules/ShipModule/index.js,4/d/4df5c9985604541bd89538bbd4f021bcd620982c
 <
 .env.example,d/4/d4dae00d11854b35292c2b8a30515a9a0aa2d871
